@@ -1,7 +1,7 @@
 import axios from "axios";
 
 
-const BASE_URL = `resqhavenbackend-production-de5a.up.railway.app`
+const BASE_URL = `http://resqhavenbackend-production-de5a.up.railway.app`
 //const BASE_URL = 'http://localhost:5000'
 
 
