@@ -1,6 +1,6 @@
- import React from 'react'
+ import { useState, useEffect } from 'react';
 import '../styles/Sidebar.css'
-
+import { getRequest } from '../../API/API';
 function Sidebar() {
 
   const hazardZones = [
@@ -15,6 +15,61 @@ function Sidebar() {
     { color: '#f97316', label: 'Almost Full' },
     { color: '#ef4444', label: 'Full' },
   ];
+
+
+  const DISASTER_CONFIG = {
+  typhoon: {
+    icon: '🌀',
+    color: '#f59e0b',
+    label: 'Typhoon'
+  },
+  earthquake: {
+    icon: '🌍',
+    color: '#ef4444',
+    label: 'Earthquake'
+  },
+  tsunami: {
+    icon: '🌊',
+    color: '#3b82f6',
+    label: 'Tsunami'
+  },
+  fire: {
+    icon: '🔥',
+    color: '#dc2626',
+    label: 'Fire'
+  },
+  flood: {
+    icon: '💧',
+    color: '#0ea5e9',
+    label: 'Flood'
+  }
+}
+
+const [alerts, setAlerts] = useState([])
+
+  useEffect(()=>{
+    
+
+      const fetch = async ()=>{
+        try{
+        const response = await getRequest('api/alerts')
+        
+        const data = response.data || []
+        setAlerts(data)
+        
+      }
+
+       
+
+    catch(error){
+      console.log(error);
+      
+    }}
+
+      fetch()
+
+  },[])
+
 
   return (
     <div className='d-flex flex-column p-3 bg-white h-100 overflow-auto'>
@@ -107,61 +162,70 @@ function Sidebar() {
 
       {/* Active Alerts */}
       <div className='mb-2'>
-        <p className='fw-bold mb-2'
-          style={{ fontSize: 13 }}
-        >
-          🚨 Active Alerts
-        </p>
+  <p className='fw-bold mb-2'
+    style={{ fontSize: 13 }}
+  >
+    🚨 Active Alerts
+    {alerts.length > 0 && (
+      <span className='badge bg-danger ms-2'>
+        {alerts.length}
+      </span>
+    )}
+  </p>
 
-        <div className='d-flex align-items-center 
-          gap-2 bg-light rounded-2 p-2 mb-2'
-          style={{ borderLeft: '3px solid #f59e0b' }}
+  {alerts.length > 0 ? (
+    alerts.map(alert => {
+      const config =
+        DISASTER_CONFIG[alert.type] || {
+          icon: '⚠️',
+          color: '#6c757d',
+          label: alert.type
+        }
+
+      return (
+        <div
+          key={alert.id}
+          className='d-flex align-items-center
+            gap-2 bg-light rounded-2 p-2 mb-2'
+          style={{
+            borderLeft: `3px solid ${config.color}`
+          }}
         >
-          <span style={{ fontSize: 20 }}>🌀</span>
+          <span style={{ fontSize: 20 }}>
+            {config.icon}
+          </span>
           <div>
             <div className='fw-bold'
               style={{ fontSize: 13 }}
             >
-              Typhoon
+              {alert.name}
             </div>
             <div className='fw-semibold'
-              style={{ fontSize: 11, color: '#f59e0b' }}
+              style={{
+                fontSize: 11,
+                color: config.color
+              }}
             >
-              Signal 2
+              {alert.severity}
             </div>
             <div className='text-muted'
               style={{ fontSize: 11 }}
             >
-              📍 Northern Cebu
+              📍 {alert.affected_areas}
             </div>
           </div>
         </div>
-
-        <div className='d-flex align-items-center 
-          gap-2 bg-light rounded-2 p-2 mb-2'
-          style={{ borderLeft: '3px solid #3b82f6' }}
-        >
-          <span style={{ fontSize: 20 }}>🌊</span>
-          <div>
-            <div className='fw-bold'
-              style={{ fontSize: 13 }}
-            >
-              Flood
-            </div>
-            <div className='fw-semibold'
-              style={{ fontSize: 11, color: '#3b82f6' }}
-            >
-              High Risk
-            </div>
-            <div className='text-muted'
-              style={{ fontSize: 11 }}
-            >
-              📍 Mambaling
-            </div>
-          </div>
-        </div>
-
-      </div>
+      )
+    })
+  ) : (
+    <div className='text-center
+      text-muted py-3 bg-light rounded'
+      style={{ fontSize: 13 }}
+    >
+      ✅ No active alerts
+    </div>
+  )}
+</div>
 
       <hr className='my-2' />
 

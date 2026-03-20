@@ -36,6 +36,11 @@ const navItems = [
         roles: ['super_admin', 'center_staff']
       },
       {
+        name: "Family Check In",
+        path: "/familyCheckin",
+        roles: ['super_admin', 'center_staff']
+      },
+      {
         name: "Evacuation Center",
         path: "/evacuation-reg",
         roles: ['super_admin', 'center_staff']

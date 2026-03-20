@@ -23,6 +23,8 @@ import Profile from './components/pages/admin/Fetch/profile';
 import Dashboard from './components/pages/admin/Fetch/dashboard';
 
 import DisasterSimulation from './components/pages/admin/Fetch/DisasterSimulation';
+
+import FamilyCheckIn from './components/pages/admin/forms/familyCheckIn';
 function App() {
 
   return (
@@ -95,6 +97,11 @@ function App() {
              <Route path='/simulate' element={
             <ProtectedRoute roles={['barangay_official', 'super_admin']}>
                 <DisasterSimulation/>
+            </ProtectedRoute>}/>
+
+            <Route path='/familyCheckin' element={
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+                <FamilyCheckIn/>
             </ProtectedRoute>}/>
 
 
