@@ -20,6 +20,9 @@ import Evacuation from './components/pages/admin/Fetch/evacuation';
 import Listing from './components/pages/admin/Fetch/listing';
 
 import Profile from './components/pages/admin/Fetch/profile';
+import Dashboard from './components/pages/admin/Fetch/dashboard';
+
+import DisasterSimulation from './components/pages/admin/Fetch/DisasterSimulation';
 function App() {
 
   return (
@@ -27,7 +30,7 @@ function App() {
     <Router>
       <Routes>
           <Route path='/' element={
-            <ProtectedRoute role={['user']}>
+            <ProtectedRoute roles={['user']}>
                            <Home/>
             </ProtectedRoute>
             
@@ -40,49 +43,59 @@ function App() {
           
 
           <Route path='/evacuation-reg' element={
-            <ProtectedRoute role={['barangay_official']}>
+            <ProtectedRoute roles={['super_admin','barangay_official']}>
                 <EvacuationCenter/>
             </ProtectedRoute>}/>
             
 
            <Route path='/admin-reg' element={
-            <ProtectedRoute role={['barangay_official']}>
+            <ProtectedRoute roles={['super_admin']}>
                 <AdminRegister/>
             </ProtectedRoute>}/>  
 
     
           <Route path='/hazard-reg' element={
-            <ProtectedRoute role={['barangay_official']}>
+            <ProtectedRoute roles={['super_admin','barangay_official']}>
                 <Hazard/>
             </ProtectedRoute>}/>
 
             <Route path='/check-reg' element={
-            <ProtectedRoute role={['barangay_official']}>
+            <ProtectedRoute roles={['super_admin','barangay_official']}>
                 <Check/>
             </ProtectedRoute>}/>
 
             <Route path='/qr-checkin' element={
-            <ProtectedRoute role={['barangay_official']}>
+            <ProtectedRoute roles={['super_admin','barangay_official']}>
                 <QrCode/>
             </ProtectedRoute>}/>
 
             <Route path='/evacuation' element={
-            <ProtectedRoute role={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
                 <Evacuation/>
             </ProtectedRoute>}/>
 
 
             <Route path='/evacuation/evac-list/:id' element={
-            <ProtectedRoute role={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
                 <Listing/>
             </ProtectedRoute>}/>
 
 
             <Route path='/evacuation/evac-list/:id/user/:id' element={
-            <ProtectedRoute role={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
                 <Profile/>
             </ProtectedRoute>}/>
 
+
+            <Route path='/dashboard' element={
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+                <Dashboard/>
+            </ProtectedRoute>}/>
+
+             <Route path='/simulate' element={
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+                <DisasterSimulation/>
+            </ProtectedRoute>}/>
 
 
           </Route>

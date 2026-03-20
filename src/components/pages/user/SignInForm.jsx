@@ -43,6 +43,8 @@ export default function SignInForm() {
 
         setUser(response.user) 
         
+        console.log(response.user.role);
+        
         if(response.user.role != 'user'){
         navigate('/admin-reg')
         }

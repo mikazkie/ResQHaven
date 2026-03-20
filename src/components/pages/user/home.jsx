@@ -2,7 +2,7 @@ import React from 'react'
 import Map from '../../map/map'
 import Sidebar from '../../layout/sidebar'
 import '../../styles/Home.css'
-
+import Chat  from '../user/chatBot'
 function Home() {
   return (
     <div className="home-container">
@@ -12,6 +12,7 @@ function Home() {
         <div className="col-12 col-md-8 col-lg-9">
           <div className="map-wrapper">
             <Map />
+            {/* <Chat/> */}
           </div>
         </div>
 

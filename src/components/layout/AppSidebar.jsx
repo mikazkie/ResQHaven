@@ -8,8 +8,13 @@ const navItems = [
     icon: "⊞",
     name: "Dashboard",
     subItems: [
-      { name: "Ecommerce", path: "/" }
-    ],
+      { 
+        name: "Ecommerce", 
+        path: "/dashboard",
+        roles: ['super_admin', 'center_staff']
+      }
+    ]
+
   },
   {
     icon: "📅",
@@ -71,6 +76,13 @@ const othersItems = [
     subItems: [
       { name: "Line Chart", path: "/line-chart" },
       { name: "Bar Chart", path: "/bar-chart" },
+    ],
+  },
+  {
+    icon: "🥧",
+    name: "Simulations",
+    subItems: [
+      { name: "Simulate", path: "/simulate" },
     ],
   },
   {

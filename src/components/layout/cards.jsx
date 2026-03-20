@@ -22,11 +22,11 @@ function Cards({ center }) {
                 </div>
 
                 <h5 className="card-title fw-semibold">
-                  Evacuation Center
+                  {element.name}
                 </h5>
 
-                <p className="text-muted mb-2">
-                  {element.name}
+                <p className={ element.status === 'open' ? "text-muted mb-2 text-success" : "text-muted mb-2 text-success"}>
+                  {element.status}
                 </p>
 
                 <div className="fw-medium">

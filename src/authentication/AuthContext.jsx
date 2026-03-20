@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
       try {
         const response = await getRequest('api/me')
         
+        
         if (response.success) {
           setUser(response.user)
         }
