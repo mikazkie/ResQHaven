@@ -2,120 +2,139 @@ import { useState } from 'react'
 import QRScanner from '../../../../components/QR/scan'
 import { postRequest } from '../../../../API/API'
 
-// ✅ Reusable ListItem component
-const ListItem = ({ item, onRemove, color, showQty }) => (
-  <div
-    className='d-flex align-items-center
-      justify-content-between px-3 py-2 rounded'
-    style={{
-      background: color.bg,
-      border: `1px solid ${color.border}`,
-      fontSize: 13
-    }}
-  >
-    <div className='d-flex align-items-center gap-2'>
-      <span className='fw-medium'>{item.name}</span>
-      {showQty && (
-        <span
-          className='badge'
-          style={{
-            background: color.badge,
-            color: color.badgeText
-          }}
-        >
-          x{item.quantity}
-        </span>
-      )}
-    </div>
-    <button
-      type='button'
-      className='btn btn-sm p-0'
-      style={{ color: color.remove, fontSize: 15 }}
-      onClick={() => onRemove(item.id)}
-    >
-      ✕
-    </button>
-  </div>
-)
+// ✅ Secondary status config
+const SECONDARY_STATUS = [
+  { value: 'injured', label: 'Injured', icon: '🤕' },
+  { value: 'chronic_illness', label: 'With Chronic Illness', icon: '💊' },
+  { value: 'critical_condition', label: 'Critical Condition', icon: '🚨' },
+  { value: 'senior_citizen', label: 'Senior Citizen', icon: '👴' },
+  { value: 'pwd', label: 'Person with Disability', icon: '♿' },
+  { value: 'pregnant', label: 'Pregnant Woman', icon: '🤰' },
+  { value: 'infant_child', label: 'Infant / Child', icon: '👶' },
+  { value: 'lactating', label: 'Lactating Mother', icon: '🍼' },
+  { value: 'others', label: 'Others...', icon: '📝' }
+]
 
-export default function CheckIn() {
+// ✅ Type badge config
+const TYPE_BADGE = {
+  medicine: { label: '💊 Medicine', bg: 'bg-primary' },
+  special_food: { label: '🍽️ Food', bg: 'bg-success' },
+  allergy: { label: '🤧 Allergy', bg: 'bg-danger' }
+}
+
+// ✅ Auto-suggest needs based on status
+const STATUS_NEEDS_MAP = {
+  senior_citizen: {
+    special_needs: [
+      { type: 'medicine', name: 'Maintenance Medicine', quantity: 1 },
+      { type: 'special_food', name: 'Soft Food', quantity: 1 }
+    ]
+  },
+  pregnant: {
+    special_needs: [
+      { type: 'medicine', name: 'Prenatal Vitamins', quantity: 1 },
+      { type: 'special_food', name: 'Nutritious Meals', quantity: 3 }
+    ]
+  },
+  infant_child: {
+    special_needs: [
+      { type: 'special_food', name: 'Milk/Formula', quantity: 1 }
+    ]
+  },
+  lactating: {
+    special_needs: [
+      { type: 'special_food', name: 'Nutritious Meals', quantity: 3 }
+    ]
+  },
+  chronic_illness: {
+    special_needs: [
+      { type: 'medicine', name: 'Maintenance Medicine', quantity: 1 }
+    ]
+  },
+  injured: {
+    special_needs: [
+      { type: 'medicine', name: 'Pain Reliever', quantity: 1 }
+    ]
+  }
+}
+
+export default function QRCheckIn() {
   const [isOnline] = useState(navigator.onLine)
   const [scannedUser, setScannedUser] = useState(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
-  // ✅ Special Foods
-  const [specialFoods, setSpecialFoods] = useState([])
-  const [specialInput, setSpecialInput] = useState({
-    name: '', quantity: ''
+  // ✅ Secondary status
+  const [selectedStatuses, setSelectedStatuses] = useState([])
+  const [othersText, setOthersText] = useState('')
+
+  // ✅ Unified special needs
+  const [specialNeeds, setSpecialNeeds] = useState([])
+  const [needInput, setNeedInput] = useState({
+    type: 'medicine', name: '', quantity: ''
   })
 
-  // ✅ Allergies
-  const [allergies, setAllergies] = useState([])
-  const [allergyInput, setAllergyInput] = useState('')
+  // ✅ Auto-suggest needs from status
+  const applyPresetNeeds = (status) => {
+    const preset = STATUS_NEEDS_MAP[status]
+    if (!preset) return
+    setSpecialNeeds(prev => {
+      const newItems = preset.special_needs.filter(
+        n => !prev.some(
+          p => p.name === n.name && p.type === n.type
+        )
+      )
+      return [...prev, ...newItems.map(item => ({
+        ...item, id: Date.now() + Math.random()
+      }))]
+    })
+  }
 
-  // ✅ Medicines
-  const [medicines, setMedicines] = useState([])
-  const [medicineInput, setMedicineInput] = useState({
-    name: '', quantity: ''
-  })
+  // ✅ Toggle secondary status
+  const handleStatusToggle = (value) => {
+    setSelectedStatuses(prev => {
+      const exists = prev.includes(value)
+      if (exists) return prev.filter(s => s !== value)
+      applyPresetNeeds(value)
+      return [...prev, value]
+    })
+  }
 
-  // ── Special Foods handlers ──
-  const handleAddSpecial = () => {
-    if (!specialInput.name ||
-      !specialInput.quantity) return
-    setSpecialFoods([...specialFoods, {
+  // ✅ Add special need
+  const handleAddNeed = () => {
+    if (!needInput.name.trim()) return
+    setSpecialNeeds([...specialNeeds, {
       id: Date.now(),
-      name: specialInput.name,
-      quantity: specialInput.quantity
+      type: needInput.type,
+      name: needInput.name,
+      quantity: needInput.type === 'allergy'
+        ? 0 : Number(needInput.quantity) || 1
     }])
-    setSpecialInput({ name: '', quantity: '' })
-  }
-  const handleRemoveSpecial = (id) =>
-    setSpecialFoods(specialFoods.filter(i => i.id !== id))
-
-  // ── Allergy handlers ──
-  const handleAddAllergy = () => {
-    if (!allergyInput.trim()) return
-    setAllergies([...allergies, {
-      id: Date.now(),
-      name: allergyInput
-    }])
-    setAllergyInput('')
-  }
-  const handleRemoveAllergy = (id) =>
-    setAllergies(allergies.filter(i => i.id !== id))
-
-  // ── Medicine handlers ──
-  const handleAddMedicine = () => {
-    if (!medicineInput.name ||
-      !medicineInput.quantity) return
-    setMedicines([...medicines, {
-      id: Date.now(),
-      name: medicineInput.name,
-      quantity: medicineInput.quantity
-    }])
-    setMedicineInput({ name: '', quantity: '' })
-  }
-  const handleRemoveMedicine = (id) =>
-    setMedicines(medicines.filter(i => i.id !== id))
-
-  // ── Reset needs ──
-  const resetNeeds = () => {
-    setAllergies([])
-    setMedicines([])
-    setSpecialFoods([])
+    setNeedInput({ ...needInput, name: '', quantity: '' })
   }
 
-  // ── When QR is scanned ──
+  // ✅ Remove special need
+  const handleRemoveNeed = (id) =>
+    setSpecialNeeds(specialNeeds.filter(n => n.id !== id))
+
+  // ✅ Reset all needs
+  const resetAll = () => {
+    setSpecialNeeds([])
+    setSelectedStatuses([])
+    setOthersText('')
+    setNeedInput({ type: 'medicine', name: '', quantity: '' })
+  }
+
+  // ✅ When QR is scanned
   const handleScan = (userData) => {
     setScannedUser(userData)
     setSuccess('')
     setError('')
+    resetAll()
   }
 
-  // ── Save to localStorage ──
+  // ✅ Save to localStorage (offline)
   const saveOffline = (data) => {
     const existing = JSON.parse(
       localStorage.getItem('offline_checkins') || '[]'
@@ -127,13 +146,12 @@ export default function CheckIn() {
     )
   }
 
-  // ── Sync offline data ──
+  // ✅ Sync offline data
   const syncOffline = async () => {
     const offline = JSON.parse(
       localStorage.getItem('offline_checkins') || '[]'
     )
     if (offline.length === 0) return
-
     const failed = []
     for (const item of offline) {
       try {
@@ -146,32 +164,31 @@ export default function CheckIn() {
       'offline_checkins',
       JSON.stringify(failed)
     )
-    alert(`✅ Synced ${
-      offline.length - failed.length
-    } records!`)
+    alert(`✅ Synced ${offline.length - failed.length} records!`)
   }
 
-  // ── Confirm Check-in ──
+  // ✅ Confirm Check-in
   const handleCheckIn = async () => {
     if (!scannedUser) return
 
     const checkInData = {
       user_id: scannedUser.userId,
-      allergies,
-      medicines,
-      special_foods: specialFoods
+      primary_status: 'checked_in',
+      second_status: selectedStatuses,
+      second_status_others: othersText,
+      special_needs: specialNeeds
     }
 
     if (navigator.onLine) {
       try {
         setLoading(true)
         await postRequest('auth/qr-checkin', checkInData)
-        setSuccess(`✅ ${scannedUser.firstname} checked in!`)
+        setSuccess(`✅ ${scannedUser.name} checked in!`)
         setScannedUser(null)
-        resetNeeds()
+        resetAll()
       } catch (err) {
         setError(
-          err.response?.message ||
+          err.response?.data?.message ||
           'Check-in failed!'
         )
         saveOffline(checkInData)
@@ -180,9 +197,9 @@ export default function CheckIn() {
       }
     } else {
       saveOffline(checkInData)
-      setSuccess(`📵 ${scannedUser.firstname} saved offline!`)
+      setSuccess(`📵 ${scannedUser.name} saved offline!`)
       setScannedUser(null)
-      resetNeeds()
+      resetAll()
     }
   }
 
@@ -190,21 +207,25 @@ export default function CheckIn() {
     localStorage.getItem('offline_checkins') || '[]'
   ).length
 
+  // Summary counts
+  const medicineCount = specialNeeds.filter(n => n.type === 'medicine').length
+  const foodCount = specialNeeds.filter(n => n.type === 'special_food').length
+  const allergyCount = specialNeeds.filter(n => n.type === 'allergy').length
+
   return (
     <div className='p-4'>
 
-      {/* ── Online Status ── */}
+      {/* Online Status */}
       <div className={`alert py-2 mb-3 ${
         isOnline ? 'alert-success' : 'alert-warning'
-      }`} style={{ fontSize: 13 }}
-      >
+      }`} style={{ fontSize: 13 }}>
         {isOnline
           ? '🟢 Online — saving to database'
           : '🔴 Offline — saving locally'
         }
       </div>
 
-      {/* ── Pending Sync ── */}
+      {/* Pending Sync */}
       {pendingCount > 0 && isOnline && (
         <div className='alert alert-info d-flex
           align-items-center
@@ -222,27 +243,25 @@ export default function CheckIn() {
         </div>
       )}
 
-      {/* ── Success ── */}
+      {/* Success */}
       {success && (
-        <div className='alert alert-success
-          py-2 mb-3'
+        <div className='alert alert-success py-2 mb-3'
           style={{ fontSize: 13 }}
         >
           {success}
         </div>
       )}
 
-      {/* ── Error ── */}
+      {/* Error */}
       {error && (
-        <div className='alert alert-danger
-          py-2 mb-3'
+        <div className='alert alert-danger py-2 mb-3'
           style={{ fontSize: 13 }}
         >
           ❌ {error}
         </div>
       )}
 
-      {/* ── QR Scanner ── */}
+      {/* QR Scanner */}
       {!scannedUser && (
         <div className='card border-0 shadow-sm mb-4'>
           <div className='card-body p-4'>
@@ -259,15 +278,13 @@ export default function CheckIn() {
         </div>
       )}
 
-      {/* ── Scanned User + Needs ── */}
+      {/* Scanned User + Details */}
       {scannedUser && (
         <>
-          {/* User Info Card */}
+          {/* User Info */}
           <div className='card border-0 shadow-sm mb-3'>
             <div className='card-body p-4 text-center'>
-              <div style={{
-                fontSize: '3rem', marginBottom: 12
-              }}>
+              <div style={{ fontSize: '3rem', marginBottom: 12 }}>
                 👤
               </div>
               <h5 className='fw-bold mb-1'>
@@ -279,13 +296,36 @@ export default function CheckIn() {
                 {scannedUser.barangay},{' '}
                 {scannedUser.municipality}
               </p>
-              <span className='badge bg-success mb-3'>
+              <span className='badge bg-success mb-2'>
                 Registered User ✓
               </span>
+
+              {/* Primary Status — auto */}
+              <div className='d-flex align-items-center
+                gap-2 p-2 rounded mt-3'
+                style={{
+                  background: '#dbeafe',
+                  border: '1px solid #93c5fd'
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>🏠</span>
+                <div className='flex-grow-1 text-start'>
+                  <div className='fw-semibold'
+                    style={{ fontSize: 12, color: '#1d4ed8' }}
+                  >
+                    Primary: Checked-in (Active Evacuee)
+                  </div>
+                </div>
+                <span className='badge bg-primary'
+                  style={{ fontSize: 10 }}
+                >
+                  Auto ✓
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Needs Card */}
+          {/* ── Secondary Status ── */}
           <div className='card border-0 shadow-sm mb-3'>
             <div className='card-body p-4'>
 
@@ -297,199 +337,333 @@ export default function CheckIn() {
                   letterSpacing: 1
                 }}
               >
-                Medical &amp; Food Needs
+                Special Conditions
               </div>
 
-              <div className='d-flex flex-column gap-3'>
+              {/* None option */}
+              <div
+                className='d-flex align-items-center
+                  gap-2 p-2 rounded border mb-2'
+                style={{
+                  cursor: 'pointer', fontSize: 13,
+                  background: selectedStatuses.length === 0
+                    ? '#d1fae5' : '#f8f9fa',
+                  borderColor: selectedStatuses.length === 0
+                    ? '#22c55e' : '#dee2e6',
+                  color: selectedStatuses.length === 0
+                    ? '#15803d' : '#6c757d',
+                  userSelect: 'none'
+                }}
+                onClick={() => {
+                  setSelectedStatuses([])
+                  setOthersText('')
+                }}
+              >
+                <span>✅</span>
+                <span className='fw-medium'>
+                  None — No special condition
+                </span>
+                {selectedStatuses.length === 0 && (
+                  <span className='ms-auto fw-bold text-success'>✓</span>
+                )}
+              </div>
 
-                {/* ── Allergies ── */}
-                <div>
-                  <label className='form-label fw-medium'>
-                    🤧 Allergies
-                  </label>
-                  <div className='d-flex gap-2 mb-2'>
-                    <input
-                      type='text'
-                      className='form-control'
-                      placeholder='e.g. Chicken'
-                      value={allergyInput}
-                      onChange={(e) =>
-                        setAllergyInput(e.target.value)
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddAllergy()
-                        }
+              {/* Status chips */}
+              <div className='d-flex flex-wrap gap-2 mb-2'>
+                {SECONDARY_STATUS.map(status => {
+                  const isSelected =
+                    selectedStatuses.includes(status.value)
+                  return (
+                    <div key={status.value}
+                      className='px-3 py-2 rounded border
+                        d-flex align-items-center gap-1'
+                      style={{
+                        cursor: 'pointer', fontSize: 12,
+                        background: isSelected ? '#fff3cd' : '#f8f9fa',
+                        borderColor: isSelected ? '#ffc107' : '#dee2e6',
+                        color: isSelected ? '#856404' : '#6c757d',
+                        transition: 'all 0.15s',
+                        userSelect: 'none'
                       }}
-                    />
-                    <button
-                      type='button'
-                      className='btn btn-danger flex-shrink-0'
-                      onClick={handleAddAllergy}
+                      onClick={() =>
+                        handleStatusToggle(status.value)
+                      }
                     >
-                      + Add
-                    </button>
-                  </div>
-                  {allergies.length > 0 && (
-                    <div className='d-flex flex-column gap-1'>
-                      {allergies.map(item => (
-                        <ListItem
-                          key={item.id}
-                          item={item}
-                          onRemove={handleRemoveAllergy}
-                          showQty={false}
-                          color={{
-                            bg: '#fff1f2',
-                            border: '#fecdd3',
-                            remove: '#ef4444'
-                          }}
-                        />
-                      ))}
-                      <div className='text-muted mt-1'
-                        style={{ fontSize: 12 }}
-                      >
-                        {allergies.length} allerg
-                        {allergies.length > 1
-                          ? 'ies' : 'y'} added
-                      </div>
+                      <span>{status.icon}</span>
+                      <span>{status.label}</span>
+                      {isSelected && (
+                        <span className='ms-1 fw-bold'>✓</span>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {/* ── Medicines ── */}
-                <div>
-                  <label className='form-label fw-medium'>
-                    💊 Medicine
-                  </label>
-                  <div className='d-flex gap-2 mb-2'>
-                    <input
-                      type='text'
-                      className='form-control'
-                      placeholder='e.g. Bioflu'
-                      value={medicineInput.name}
-                      onChange={(e) => setMedicineInput({
-                        ...medicineInput,
-                        name: e.target.value
-                      })}
-                    />
-                    <input
-                      type='number'
-                      className='form-control'
-                      placeholder='Qty'
-                      style={{ maxWidth: 90 }}
-                      value={medicineInput.quantity}
-                      min={1}
-                      onChange={(e) => setMedicineInput({
-                        ...medicineInput,
-                        quantity: e.target.value
-                      })}
-                    />
-                    <button
-                      type='button'
-                      className='btn btn-danger flex-shrink-0'
-                      onClick={handleAddMedicine}
-                    >
-                      + Add
-                    </button>
-                  </div>
-                  {medicines.length > 0 && (
-                    <div className='d-flex flex-column gap-1'>
-                      {medicines.map(item => (
-                        <ListItem
-                          key={item.id}
-                          item={item}
-                          onRemove={handleRemoveMedicine}
-                          showQty={true}
-                          color={{
-                            bg: '#eff6ff',
-                            border: '#bfdbfe',
-                            badge: '#dbeafe',
-                            badgeText: '#1d4ed8',
-                            remove: '#3b82f6'
-                          }}
-                        />
-                      ))}
-                      <div className='text-muted mt-1'
-                        style={{ fontSize: 12 }}
-                      >
-                        {medicines.length} medicine
-                        {medicines.length > 1
-                          ? 's' : ''} added
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── Special Foods ── */}
-                <div>
-                  <label className='form-label fw-medium'>
-                    🍽️ Special Foods
-                  </label>
-                  <div className='d-flex gap-2 mb-2'>
-                    <input
-                      type='text'
-                      className='form-control'
-                      placeholder='e.g. Milk'
-                      value={specialInput.name}
-                      onChange={(e) => setSpecialInput({
-                        ...specialInput,
-                        name: e.target.value
-                      })}
-                    />
-                    <input
-                      type='number'
-                      className='form-control'
-                      placeholder='Qty'
-                      style={{ maxWidth: 90 }}
-                      value={specialInput.quantity}
-                      min={1}
-                      onChange={(e) => setSpecialInput({
-                        ...specialInput,
-                        quantity: e.target.value
-                      })}
-                    />
-                    <button
-                      type='button'
-                      className='btn btn-danger flex-shrink-0'
-                      onClick={handleAddSpecial}
-                    >
-                      + Add
-                    </button>
-                  </div>
-                  {specialFoods.length > 0 && (
-                    <div className='d-flex flex-column gap-1'>
-                      {specialFoods.map(item => (
-                        <ListItem
-                          key={item.id}
-                          item={item}
-                          onRemove={handleRemoveSpecial}
-                          showQty={true}
-                          color={{
-                            bg: '#f0fdf4',
-                            border: '#bbf7d0',
-                            badge: '#dcfce7',
-                            badgeText: '#15803d',
-                            remove: '#22c55e'
-                          }}
-                        />
-                      ))}
-                      <div className='text-muted mt-1'
-                        style={{ fontSize: 12 }}
-                      >
-                        {specialFoods.length} item
-                        {specialFoods.length > 1
-                          ? 's' : ''} added
-                      </div>
-                    </div>
-                  )}
-                </div>
-
+                  )
+                })}
               </div>
+
+              {/* Others text */}
+              {selectedStatuses.includes('others') && (
+                <input type='text'
+                  className='form-control form-control-sm mt-1'
+                  placeholder='Please specify condition...'
+                  value={othersText}
+                  onChange={(e) => setOthersText(e.target.value)}
+                />
+              )}
+
+              {/* Selected summary */}
+              {selectedStatuses.length > 0 && (
+                <div className='mt-2 p-2 rounded
+                  bg-warning bg-opacity-10
+                  border border-warning-subtle'
+                >
+                  <div className='text-muted mb-1'
+                    style={{ fontSize: 11 }}
+                  >
+                    Selected conditions:
+                  </div>
+                  <div className='d-flex flex-wrap gap-1'>
+                    {selectedStatuses.map(s => {
+                      const found = SECONDARY_STATUS
+                        .find(x => x.value === s)
+                      return (
+                        <span key={s}
+                          className='badge bg-warning text-dark'
+                        >
+                          {found?.icon} {found?.label}
+                          {s === 'others' && othersText
+                            ? `: ${othersText}` : ''}
+                        </span>
+                      )
+                    })}
+                  </div>
+                  {specialNeeds.length > 0 && (
+                    <div className='mt-1 text-muted'
+                      style={{ fontSize: 11 }}
+                    >
+                      💡 Needs auto-suggested based
+                      on selected conditions
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           </div>
 
-          {/* ── Action Buttons ── */}
+          {/* ── Special Needs ── */}
+          <div className='card border-0 shadow-sm mb-3'>
+            <div className='card-body p-4'>
+
+              <div className='fw-semibold text-muted
+                border-bottom pb-2 mb-3'
+                style={{
+                  fontSize: 12,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1
+                }}
+              >
+                Special Needs
+              </div>
+
+              {/* Summary cards */}
+              {specialNeeds.length > 0 && (
+                <div className='row g-2 mb-3'>
+                  <div className='col-4'>
+                    <div className='card border-0
+                      bg-primary bg-opacity-10 text-center p-2'
+                    >
+                      <div className='fw-bold text-primary fs-5'>
+                        {medicineCount}
+                      </div>
+                      <div className='text-muted'
+                        style={{ fontSize: 11 }}
+                      >
+                        💊 Medicines
+                      </div>
+                    </div>
+                  </div>
+                  <div className='col-4'>
+                    <div className='card border-0
+                      bg-success bg-opacity-10 text-center p-2'
+                    >
+                      <div className='fw-bold text-success fs-5'>
+                        {foodCount}
+                      </div>
+                      <div className='text-muted'
+                        style={{ fontSize: 11 }}
+                      >
+                        🍽️ Foods
+                      </div>
+                    </div>
+                  </div>
+                  <div className='col-4'>
+                    <div className='card border-0
+                      bg-danger bg-opacity-10 text-center p-2'
+                    >
+                      <div className='fw-bold text-danger fs-5'>
+                        {allergyCount}
+                      </div>
+                      <div className='text-muted'
+                        style={{ fontSize: 11 }}
+                      >
+                        🤧 Allergies
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Input row */}
+              <label className='form-label fw-medium'>
+                🆘 Add Special Need
+                <span className='text-muted ms-2'
+                  style={{ fontSize: 11 }}
+                >
+                  (medicines, food, allergies)
+                </span>
+              </label>
+
+              <div className='d-flex gap-2 mb-3
+                flex-wrap flex-md-nowrap'
+              >
+                <select
+                  className='form-select'
+                  style={{ maxWidth: 160 }}
+                  value={needInput.type}
+                  onChange={(e) => setNeedInput({
+                    ...needInput, type: e.target.value
+                  })}
+                >
+                  <option value='medicine'>💊 Medicine</option>
+                  <option value='special_food'>🍽️ Special Food</option>
+                  <option value='allergy'>🤧 Allergy</option>
+                </select>
+
+                <input type='text'
+                  className='form-control'
+                  placeholder={
+                    needInput.type === 'medicine' ? 'e.g. Bioflu'
+                    : needInput.type === 'special_food' ? 'e.g. Milk'
+                    : 'e.g. Chicken'
+                  }
+                  value={needInput.name}
+                  onChange={(e) => setNeedInput({
+                    ...needInput, name: e.target.value
+                  })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddNeed()
+                    }
+                  }}
+                />
+
+                {needInput.type !== 'allergy' && (
+                  <input type='number'
+                    className='form-control'
+                    placeholder='Qty'
+                    style={{ maxWidth: 80 }}
+                    value={needInput.quantity} min={1}
+                    onChange={(e) => setNeedInput({
+                      ...needInput, quantity: e.target.value
+                    })}
+                  />
+                )}
+
+                <button type='button'
+                  className='btn btn-danger flex-shrink-0'
+                  onClick={handleAddNeed}
+                >
+                  + Add
+                </button>
+              </div>
+
+              {/* ✅ Table display */}
+              {specialNeeds.length > 0 ? (
+                <div className='table-responsive'>
+                  <table className='table table-bordered
+                    table-hover mb-0'
+                    style={{ fontSize: 13 }}
+                  >
+                    <thead className='table-light'>
+                      <tr>
+                        <th style={{ width: 40 }}>#</th>
+                        <th style={{ width: 120 }}>Type</th>
+                        <th>Name</th>
+                        <th style={{ width: 80 }}>Qty</th>
+                        <th style={{ width: 60 }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {specialNeeds.map((item, index) => (
+                        <tr key={item.id}>
+                          <td className='text-muted text-center'>
+                            {index + 1}
+                          </td>
+                          <td>
+                            <span className={`badge ${
+                              TYPE_BADGE[item.type]?.bg
+                            }`}>
+                              {TYPE_BADGE[item.type]?.label}
+                            </span>
+                          </td>
+                          <td className='fw-medium'>
+                            {item.name}
+                          </td>
+                          <td className='text-center'>
+                            {item.type === 'allergy' ? (
+                              <span className='text-muted'>—</span>
+                            ) : (
+                              <span className='badge bg-secondary'>
+                                x{item.quantity}
+                              </span>
+                            )}
+                          </td>
+                          <td className='text-center'>
+                            <button
+                              type='button'
+                              className='btn btn-sm
+                                btn-outline-danger py-0'
+                              onClick={() =>
+                                handleRemoveNeed(item.id)
+                              }
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className='table-light'>
+                      <tr>
+                        <td colSpan='5'
+                          style={{ fontSize: 12 }}
+                        >
+                          <div className='d-flex gap-3 text-muted'>
+                            <span>💊 {medicineCount} medicine(s)</span>
+                            <span>🍽️ {foodCount} food(s)</span>
+                            <span>🤧 {allergyCount} allergy(ies)</span>
+                            <span className='ms-auto fw-medium text-dark'>
+                              Total: {specialNeeds.length} item(s)
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              ) : (
+                <div className='text-center text-muted
+                  py-3 border rounded bg-light'
+                  style={{ fontSize: 13 }}
+                >
+                  No special needs added yet
+                </div>
+              )}
+
+            </div>
+          </div>
+
+          {/* Action Buttons */}
           <div className='d-flex gap-2'>
             <button
               className='btn btn-danger flex-grow-1'
@@ -499,7 +673,8 @@ export default function CheckIn() {
               {loading ? (
                 <>
                   <span className='spinner-border
-                    spinner-border-sm me-2' />
+                    spinner-border-sm me-2'
+                  />
                   Checking in...
                 </>
               ) : '✅ Confirm Check-in'}
@@ -508,7 +683,7 @@ export default function CheckIn() {
               className='btn btn-outline-secondary'
               onClick={() => {
                 setScannedUser(null)
-                resetNeeds()
+                resetAll()
               }}
             >
               ✕ Cancel

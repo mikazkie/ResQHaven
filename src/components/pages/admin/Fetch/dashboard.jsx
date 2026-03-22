@@ -30,7 +30,7 @@ export default function Dashboard() {
         
         setCenters(centersRes)
         setNeeds(need)
-        setActive(ac.active)
+        setActive(ac.data)
 
         // Calculate stats
         setStats({
