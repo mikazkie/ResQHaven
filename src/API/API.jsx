@@ -2,7 +2,11 @@ import axios from "axios";
 
 
 
+<<<<<<< HEAD
 // const BASE_URL = 'https://resqhavenbackend-production-de5a.up.railway.app'
+=======
+//const BASE_URL = 'https://resqhavenbackend-production-de5a.up.railway.app'
+>>>>>>> 20c4f3dfa41b43307dfffe89aded9de19e0a3968
 
 const BASE_URL = 'http://localhost:5000' 
 
