@@ -55,6 +55,11 @@ const navItems = [
         path: "/admin-reg",
         roles: ['super_admin']
       },
+      {
+        name: "Hotline",
+        path: "/hotline-reg",
+        roles: ['super_admin', 'barangay_official']
+      }
     ],
   },
   {
