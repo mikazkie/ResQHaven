@@ -226,6 +226,9 @@ export default function DisasterSimulation() {
           alertId: response.alertId,
           message: response.message
         })
+
+
+        
       }
     } catch (err) {
       setError(
@@ -315,6 +318,9 @@ export default function DisasterSimulation() {
           </div>
         </div>
       )}
+
+
+      
 
       {/* ── Error ── */}
       {error && (

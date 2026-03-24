@@ -12,7 +12,7 @@ function Home() {
         <div className="col-12 col-md-8 col-lg-9">
           <div className="map-wrapper">
             <Map />
-            {/* <Chat/> */}
+            <Chat/>
           </div>
         </div>
 

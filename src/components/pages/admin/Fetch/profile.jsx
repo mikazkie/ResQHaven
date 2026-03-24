@@ -448,7 +448,7 @@ const serveNeed = async (needId, type) => {
     className='text-muted mb-2'
     style={{ fontSize: 12 }}
   >
-    💊 Medicines
+    Medicines
   </div>
 
   {evacuee?.needs?.medicines?.length > 0
@@ -471,7 +471,7 @@ const serveNeed = async (needId, type) => {
             x{m.quantity}
           </span>
 
-          {m.served ? (
+          {m.served  !== 'pending'? (
             <span className='badge bg-success'>
               Served
             </span>
@@ -504,7 +504,7 @@ const serveNeed = async (needId, type) => {
                   <div className='text-muted mb-2'
                     style={{ fontSize: 12 }}
                   >
-                    🍽️ Special Foods
+                    Special Foods
                   </div>
                   {evacuee.needs?.special_foods?.length > 0
                     ? evacuee.needs.special_foods.map(
@@ -529,7 +529,7 @@ const serveNeed = async (needId, type) => {
                               x{f.quantity}
                             </span>
 
-                                {f.served ? (
+                                {f.served !== 'pending' ? (
                                 <span className='badge bg-success'>
                                 Served
                                 </span>

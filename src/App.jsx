@@ -36,9 +36,7 @@ function App() {
     <Router>
       <Routes>
           <Route path='/' element={
-            <ProtectedRoute roles={['user']}>
                            <Home/>
-            </ProtectedRoute>
             
             }/>
 

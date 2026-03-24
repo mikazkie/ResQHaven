@@ -24,7 +24,6 @@ function Hotline() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log("SUBMIT CLICKED") // 👈 add this
     try {
       const response = await postRequest(
         'auth/hotline-reg',

@@ -307,41 +307,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className='card border-0
-            shadow-sm mt-3'
-          >
-            <div className='card-body p-4'>
-              <h6 className='fw-bold mb-3'>
-                ⚡ Quick Actions
-              </h6>
-              <div className='d-flex
-                flex-column gap-2'
-              >
-                <Link
-                  to='/check-reg'
-                  className='btn btn-danger
-                    btn-sm w-100 text-start'
-                >
-                  👥 Check In Evacuee
-                </Link>
-                <Link
-                  to='/evacuation-reg'
-                  className='btn btn-outline-danger
-                    btn-sm w-100 text-start'
-                >
-                  🏠 Add Evacuation Center
-                </Link>
-                <Link
-                  to='/qr-checkin'
-                  className='btn btn-outline-secondary
-                    btn-sm w-100 text-start'
-                >
-                  📷 QR Check In
-                </Link>
-              </div>
-            </div>
-          </div>
 
         </div>
 
