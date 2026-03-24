@@ -143,10 +143,10 @@ export default function CheckIn() {
       setLoading(true)
       const result = await saveCheckin({
         ...formData,
-        primary_status: 'checked_in',
+        primary_status: 'evacuated',
         second_status: selectedStatuses,
         second_status_others: othersText,
-        special_needs: specialNeeds
+        special_needs: specialNeeds 
       })
       if (result.success) {
         setSuccess(result.online

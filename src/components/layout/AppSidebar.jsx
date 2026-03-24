@@ -17,14 +17,15 @@ const navItems = [
 
   },
   {
-    icon: "📅",
-    name: "Calendar",
-    path: "/calendar",
-  },
-  {
     icon: "👤",
-    name: "User Profile",
-    path: "/profile",
+    name: "Reports",
+    subItems:[
+      {
+        name: "Reports",
+        path: "/report",
+        roles: ['super_admin', 'center_staff']
+      }
+    ]
   },
   {
     name: "Forms",
@@ -69,53 +70,16 @@ const navItems = [
       { name: "Evacuation Center", path: "/evacuation" }
     ],
   },
-  {
-    name: "Pages",
-    icon: "📄",
-    subItems: [
-      { name: "Blank Page", path: "/blank" },
-      { name: "404 Error", path: "/error-404" },
-    ],
-  },
 ];
 
 const othersItems = [
-  {
-    icon: "🥧",
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart" },
-      { name: "Bar Chart", path: "/bar-chart" },
-    ],
-  },
   {
     icon: "🥧",
     name: "Simulations",
     subItems: [
       { name: "Simulate", path: "/simulate" },
     ],
-  },
-  {
-    icon: "🧩",
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts" },
-      { name: "Avatar", path: "/avatars" },
-      { name: "Badge", path: "/badge" },
-      { name: "Buttons", path: "/buttons" },
-      { name: "Images", path: "/images" },
-      { name: "Videos", path: "/videos" },
-    ],
-  },
-  {
-    icon: "🔌",
-    name: "Authentication",
-    roles: ['super_admin'],
-    subItems: [
-      { name: "Sign In", path: "/signin" },
-      { name: "Sign Up", path: "/signup" },
-    ],
-  },
+  }
 ];
 
 export default function AppSidebar() {

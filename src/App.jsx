@@ -27,6 +27,8 @@ import DisasterSimulation from './components/pages/admin/Fetch/DisasterSimulatio
 import FamilyCheckIn from './components/pages/admin/forms/familyCheckIn';
 
 import Hotline from './components/pages/admin/forms/hotline';
+
+import FoodReport from './components/pages/admin/Fetch/report'
 function App() {
 
   return (
@@ -109,6 +111,12 @@ function App() {
             <Route path='/hotline-reg' element={
             <ProtectedRoute roles={['super_admin','barangay_official']}>
                 <Hotline/>
+            </ProtectedRoute>}/>
+
+
+            <Route path='/report' element={
+            <ProtectedRoute roles={['super_admin']}>
+                <FoodReport/>
             </ProtectedRoute>}/>
 
 

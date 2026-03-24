@@ -136,7 +136,7 @@ export default function Dashboard() {
               <div className='fw-bold fs-4
                 text-warning mt-1'
               >
-                {active[0].count}
+                {}
               </div>
               <div className='text-muted'
                 style={{ fontSize: 13 }}

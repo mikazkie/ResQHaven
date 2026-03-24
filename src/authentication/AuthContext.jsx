@@ -12,8 +12,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await getRequest('api/me')
-        
+        const response = await getRequest('api/me')        
         
         if (response.success) {
           setUser(response.user)
