@@ -349,7 +349,7 @@ export default function QRCheckIn() {
                 onClick={() => setMode('qr')}
               >
                 <div style={{ fontSize: '3rem' }}>
-                  📷
+                  <i class="bi bi-qr-code-scan"></i>
                 </div>
                 <h6 className='fw-bold mt-3 mb-1'>
                   Scan QR Code
@@ -363,7 +363,7 @@ export default function QRCheckIn() {
                 <span className='badge bg-success
                   align-self-center'
                 >
-                  ✅ Fastest way
+                  Fastest way
                 </span>
               </div>
             </div>
@@ -377,7 +377,7 @@ export default function QRCheckIn() {
                 onClick={() => setMode('search')}
               >
                 <div style={{ fontSize: '3rem' }}>
-                  🔍
+                  <i class="bi bi-search"></i>
                 </div>
                 <h6 className='fw-bold mt-3 mb-1'>
                   Search by Name
@@ -388,10 +388,10 @@ export default function QRCheckIn() {
                   No QR code? Search by name
                   or phone number
                 </p>
-                <span className='badge bg-primary
+                <span className='badge bg-success
                   align-self-center'
                 >
-                  📝 Manual lookup
+                  Manual lookup
                 </span>
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function QRCheckIn() {
                 ← Back
               </button>
               <h6 className='fw-bold mb-0'>
-                📷 Scan QR Code
+                 Scan QR Code
               </h6>
             </div>
             <p className='text-muted mb-3'
@@ -465,7 +465,7 @@ export default function QRCheckIn() {
                 ← Back
               </button>
               <h6 className='fw-bold mb-0'>
-                🔍 Search Evacuee
+                Search Evacuee
               </h6>
             </div>
 
@@ -501,7 +501,7 @@ export default function QRCheckIn() {
                   <span className='spinner-border
                     spinner-border-sm'
                   />
-                ) : '🔍 Search'}
+                ) : (<i class="bi bi-search"></i>)}
               </button>
             </div>
 
