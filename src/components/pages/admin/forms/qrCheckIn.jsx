@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import QRScanner from '../../../../components/QR/scan'
-import { postRequest } from '../../../../API/API'
+import { postRequest, getRequest }
+  from '../../../../API/API'
 
 // ✅ Secondary status config
 const SECONDARY_STATUS = [
@@ -22,7 +23,7 @@ const TYPE_BADGE = {
   allergy: { label: '🤧 Allergy', bg: 'bg-danger' }
 }
 
-// ✅ Auto-suggest needs based on status
+// ✅ Auto-suggest needs
 const STATUS_NEEDS_MAP = {
   senior_citizen: {
     special_needs: [
@@ -60,22 +61,32 @@ const STATUS_NEEDS_MAP = {
 
 export default function QRCheckIn() {
   const [isOnline] = useState(navigator.onLine)
+
+  // ✅ Mode: 'choose' | 'qr' | 'search'
+  const [mode, setMode] = useState('choose')
+
   const [scannedUser, setScannedUser] = useState(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
+  // ✅ Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
+
   // ✅ Secondary status
-  const [selectedStatuses, setSelectedStatuses] = useState([])
+  const [selectedStatuses, setSelectedStatuses] =
+    useState([])
   const [othersText, setOthersText] = useState('')
 
-  // ✅ Unified special needs
+  // ✅ Special needs
   const [specialNeeds, setSpecialNeeds] = useState([])
   const [needInput, setNeedInput] = useState({
     type: 'medicine', name: '', quantity: ''
   })
 
-  // ✅ Auto-suggest needs from status
+  // ✅ Auto-suggest needs
   const applyPresetNeeds = (status) => {
     const preset = STATUS_NEEDS_MAP[status]
     if (!preset) return
@@ -91,20 +102,19 @@ export default function QRCheckIn() {
     })
   }
 
-  // ✅ Toggle secondary status
   const handleStatusToggle = (value) => {
     setSelectedStatuses(prev => {
       const exists = prev.includes(value)
-      if (exists) return prev.filter(s => s !== value)
-      applyPresetNeeds(value)
-      return [...prev, value]
+      if (!exists) applyPresetNeeds(value)
+      return exists
+        ? prev.filter(s => s !== value)
+        : [...prev, value]
     })
   }
 
-  // ✅ Add special need
   const handleAddNeed = () => {
     if (!needInput.name.trim()) return
-    setSpecialNeeds([...specialNeeds, {
+    setSpecialNeeds(prev => [...prev, {
       id: Date.now(),
       type: needInput.type,
       name: needInput.name,
@@ -114,19 +124,57 @@ export default function QRCheckIn() {
     setNeedInput({ ...needInput, name: '', quantity: '' })
   }
 
-  // ✅ Remove special need
   const handleRemoveNeed = (id) =>
-    setSpecialNeeds(specialNeeds.filter(n => n.id !== id))
+    setSpecialNeeds(prev =>
+      prev.filter(n => n.id !== id)
+    )
 
-  // ✅ Reset all needs
   const resetAll = () => {
     setSpecialNeeds([])
     setSelectedStatuses([])
     setOthersText('')
     setNeedInput({ type: 'medicine', name: '', quantity: '' })
+    setScannedUser(null)
+    setSearchQuery('')
+    setSearchResults([])
   }
 
-  // ✅ When QR is scanned
+  // ✅ Search users by name/phone
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return
+    setSearching(true)
+    setError('')
+    try {
+      const response = await getRequest(
+        `api/search-user?query=${searchQuery}`
+      )
+      setSearchResults(response.data || [])
+      if ((response.data || []).length === 0) {
+        setError('No users found. Try another name or phone.')
+      }
+    } catch (err) {
+      console.log(err)
+      setError('Search failed. Please try again.')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  // ✅ Select user from search
+  const handleSelectUser = (user) => {
+    setScannedUser({
+      userId: user.id,
+      name: `${user.firstName} ${user.lastName}`,
+      barangay: user.barangay,
+      municipality: user.municipality,
+      phone: user.phone
+    })
+    setSearchResults([])
+    setSearchQuery('')
+    setError('')
+  }
+
+  // ✅ QR scanned
   const handleScan = (userData) => {
     setScannedUser(userData)
     setSuccess('')
@@ -134,7 +182,7 @@ export default function QRCheckIn() {
     resetAll()
   }
 
-  // ✅ Save to localStorage (offline)
+  // ✅ Save offline
   const saveOffline = (data) => {
     const existing = JSON.parse(
       localStorage.getItem('offline_checkins') || '[]'
@@ -146,7 +194,7 @@ export default function QRCheckIn() {
     )
   }
 
-  // ✅ Sync offline data
+  // ✅ Sync offline
   const syncOffline = async () => {
     const offline = JSON.parse(
       localStorage.getItem('offline_checkins') || '[]'
@@ -164,10 +212,12 @@ export default function QRCheckIn() {
       'offline_checkins',
       JSON.stringify(failed)
     )
-    alert(`✅ Synced ${offline.length - failed.length} records!`)
+    alert(`✅ Synced ${
+      offline.length - failed.length
+    } records!`)
   }
 
-  // ✅ Confirm Check-in
+  // ✅ Confirm check-in
   const handleCheckIn = async () => {
     if (!scannedUser) return
 
@@ -184,8 +234,8 @@ export default function QRCheckIn() {
         setLoading(true)
         await postRequest('auth/qr-checkin', checkInData)
         setSuccess(`✅ ${scannedUser.name} checked in!`)
-        setScannedUser(null)
         resetAll()
+        setMode('choose')
       } catch (err) {
         setError(
           err.response?.data?.message ||
@@ -197,9 +247,11 @@ export default function QRCheckIn() {
       }
     } else {
       saveOffline(checkInData)
-      setSuccess(`📵 ${scannedUser.name} saved offline!`)
-      setScannedUser(null)
+      setSuccess(
+        `📵 ${scannedUser.name} saved offline!`
+      )
       resetAll()
+      setMode('choose')
     }
   }
 
@@ -207,15 +259,17 @@ export default function QRCheckIn() {
     localStorage.getItem('offline_checkins') || '[]'
   ).length
 
-  // Summary counts
-  const medicineCount = specialNeeds.filter(n => n.type === 'medicine').length
-  const foodCount = specialNeeds.filter(n => n.type === 'special_food').length
-  const allergyCount = specialNeeds.filter(n => n.type === 'allergy').length
+  const medicineCount = specialNeeds
+    .filter(n => n.type === 'medicine').length
+  const foodCount = specialNeeds
+    .filter(n => n.type === 'special_food').length
+  const allergyCount = specialNeeds
+    .filter(n => n.type === 'allergy').length
 
   return (
     <div className='p-4'>
 
-      {/* Online Status */}
+      {/* Online indicator */}
       <div className={`alert py-2 mb-3 ${
         isOnline ? 'alert-success' : 'alert-warning'
       }`} style={{ fontSize: 13 }}>
@@ -225,7 +279,7 @@ export default function QRCheckIn() {
         }
       </div>
 
-      {/* Pending Sync */}
+      {/* Pending sync */}
       {pendingCount > 0 && isOnline && (
         <div className='alert alert-info d-flex
           align-items-center
@@ -249,6 +303,12 @@ export default function QRCheckIn() {
           style={{ fontSize: 13 }}
         >
           {success}
+          <button
+            className='btn btn-sm btn-outline-success ms-2'
+            onClick={() => setSuccess('')}
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -258,33 +318,286 @@ export default function QRCheckIn() {
           style={{ fontSize: 13 }}
         >
           ❌ {error}
+          <button
+            className='btn btn-sm btn-outline-danger ms-2'
+            onClick={() => setError('')}
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* QR Scanner */}
-      {!scannedUser && (
-        <div className='card border-0 shadow-sm mb-4'>
-          <div className='card-body p-4'>
-            <h5 className='fw-bold mb-1'>
-              📷 Scan QR Code
-            </h5>
-            <p className='text-muted mb-3'
-              style={{ fontSize: 13 }}
-            >
-              Scan evacuee QR code to check in
-            </p>
-            <QRScanner onScan={handleScan} />
+      {/* ── Mode Selection ── */}
+      {mode === 'choose' && !scannedUser && (
+        <div>
+          <h5 className='fw-bold mb-1'>
+            Check-in Evacuee
+          </h5>
+          <p className='text-muted mb-4'
+            style={{ fontSize: 13 }}
+          >
+            Choose how to find the evacuee
+          </p>
+
+          <div className='row g-3'>
+            {/* QR Scan */}
+            <div className='col-md-6'>
+              <div
+                className='card border-0 shadow-sm
+                  text-center p-4 h-100'
+                style={{ cursor: 'pointer' }}
+                onClick={() => setMode('qr')}
+              >
+                <div style={{ fontSize: '3rem' }}>
+                  📷
+                </div>
+                <h6 className='fw-bold mt-3 mb-1'>
+                  Scan QR Code
+                </h6>
+                <p className='text-muted mb-2'
+                  style={{ fontSize: 13 }}
+                >
+                  For evacuees with QR code
+                  in the app
+                </p>
+                <span className='badge bg-success
+                  align-self-center'
+                >
+                  ✅ Fastest way
+                </span>
+              </div>
+            </div>
+
+            {/* Search by name */}
+            <div className='col-md-6'>
+              <div
+                className='card border-0 shadow-sm
+                  text-center p-4 h-100'
+                style={{ cursor: 'pointer' }}
+                onClick={() => setMode('search')}
+              >
+                <div style={{ fontSize: '3rem' }}>
+                  🔍
+                </div>
+                <h6 className='fw-bold mt-3 mb-1'>
+                  Search by Name
+                </h6>
+                <p className='text-muted mb-2'
+                  style={{ fontSize: 13 }}
+                >
+                  No QR code? Search by name
+                  or phone number
+                </p>
+                <span className='badge bg-primary
+                  align-self-center'
+                >
+                  📝 Manual lookup
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Scanned User + Details */}
+      {/* ── QR Scanner Mode ── */}
+      {mode === 'qr' && !scannedUser && (
+        <div className='card border-0 shadow-sm'>
+          <div className='card-body p-4'>
+            <div className='d-flex
+              align-items-center gap-2 mb-3'
+            >
+              <button
+                className='btn btn-sm
+                  btn-outline-secondary'
+                onClick={() => setMode('choose')}
+              >
+                ← Back
+              </button>
+              <h6 className='fw-bold mb-0'>
+                📷 Scan QR Code
+              </h6>
+            </div>
+            <p className='text-muted mb-3'
+              style={{ fontSize: 13 }}
+            >
+              Ask the evacuee to show their
+              QR code from the app
+            </p>
+            <QRScanner onScan={handleScan} />
+
+            {/* Fallback to search */}
+            <div className='text-center mt-3'>
+              <span className='text-muted'
+                style={{ fontSize: 13 }}
+              >
+                No QR code?{' '}
+              </span>
+              <button
+                className='btn btn-link btn-sm p-0'
+                style={{ fontSize: 13 }}
+                onClick={() => setMode('search')}
+              >
+                Search by name instead →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Search Mode ── */}
+      {mode === 'search' && !scannedUser && (
+        <div className='card border-0 shadow-sm'>
+          <div className='card-body p-4'>
+
+            <div className='d-flex
+              align-items-center gap-2 mb-3'
+            >
+              <button
+                className='btn btn-sm
+                  btn-outline-secondary'
+                onClick={() => {
+                  setMode('choose')
+                  setSearchResults([])
+                  setSearchQuery('')
+                  setError('')
+                }}
+              >
+                ← Back
+              </button>
+              <h6 className='fw-bold mb-0'>
+                🔍 Search Evacuee
+              </h6>
+            </div>
+
+            <p className='text-muted mb-3'
+              style={{ fontSize: 13 }}
+            >
+              Search registered evacuees
+              by name or phone number
+            </p>
+
+            {/* Search input */}
+            <div className='input-group mb-3'>
+              <input
+                type='text'
+                className='form-control'
+                placeholder='e.g. Juan Dela Cruz or 0917...'
+                value={searchQuery}
+                onChange={e =>
+                  setSearchQuery(e.target.value)
+                }
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleSearch()
+                }}
+              />
+              <button
+                className='btn btn-danger'
+                onClick={handleSearch}
+                disabled={searching ||
+                  !searchQuery.trim()
+                }
+              >
+                {searching ? (
+                  <span className='spinner-border
+                    spinner-border-sm'
+                  />
+                ) : '🔍 Search'}
+              </button>
+            </div>
+
+            {/* Results */}
+            {searchResults.length > 0 && (
+              <div>
+                <div className='text-muted mb-2'
+                  style={{ fontSize: 12 }}
+                >
+                  Found {searchResults.length} result(s):
+                </div>
+                <div className='d-flex flex-column gap-2'>
+                  {searchResults.map(user => (
+                    <div
+                      key={user.id}
+                      className='d-flex align-items-center
+                        justify-content-between p-3
+                        border rounded'
+                      style={{ fontSize: 13 }}
+                    >
+                      <div className='d-flex
+                        align-items-center gap-3'
+                      >
+                        <div
+                          className='rounded-circle
+                            bg-danger bg-opacity-10
+                            d-flex align-items-center
+                            justify-content-center
+                            flex-shrink-0'
+                          style={{
+                            width: 40, height: 40,
+                            fontSize: '1.2rem'
+                          }}
+                        >
+                          {user.sex === 'male'
+                            ? '👨' : '👩'}
+                        </div>
+                        <div>
+                          <div className='fw-medium'>
+                            {user.firstName}{' '}
+                            {user.lastName}
+                          </div>
+                          <div className='text-muted'
+                            style={{ fontSize: 11 }}
+                          >
+                            📱 {user.phone}
+                          </div>
+                          <div className='text-muted'
+                            style={{ fontSize: 11 }}
+                          >
+                            📍 {user.barangay},{' '}
+                            {user.municipality}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        className='btn btn-sm
+                          btn-danger flex-shrink-0'
+                        onClick={() =>
+                          handleSelectUser(user)
+                        }
+                      >
+                        Select →
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No results */}
+            {searchResults.length === 0 &&
+             searchQuery &&
+             !searching && (
+              <div className='text-center
+                text-muted py-3 bg-light rounded'
+                style={{ fontSize: 13 }}
+              >
+                No users found for "{searchQuery}"
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* ── User Selected — Confirm + Status + Needs ── */}
       {scannedUser && (
         <>
-          {/* User Info */}
+          {/* User card */}
           <div className='card border-0 shadow-sm mb-3'>
             <div className='card-body p-4 text-center'>
-              <div style={{ fontSize: '3rem', marginBottom: 12 }}>
+              <div style={{
+                fontSize: '3rem', marginBottom: 12
+              }}>
                 👤
               </div>
               <h5 className='fw-bold mb-1'>
@@ -296,24 +609,37 @@ export default function QRCheckIn() {
                 {scannedUser.barangay},{' '}
                 {scannedUser.municipality}
               </p>
+              {scannedUser.phone && (
+                <p className='text-muted mb-2'
+                  style={{ fontSize: 12 }}
+                >
+                  📱 {scannedUser.phone}
+                </p>
+              )}
               <span className='badge bg-success mb-2'>
-                Registered User ✓
+                ✅ Registered User
               </span>
 
-              {/* Primary Status — auto */}
+              {/* Primary status */}
               <div className='d-flex align-items-center
-                gap-2 p-2 rounded mt-3'
+                gap-2 p-2 rounded mt-2'
                 style={{
                   background: '#dbeafe',
                   border: '1px solid #93c5fd'
                 }}
               >
-                <span style={{ fontSize: '1.1rem' }}>🏠</span>
+                <span style={{ fontSize: '1rem' }}>
+                  🏠
+                </span>
                 <div className='flex-grow-1 text-start'>
                   <div className='fw-semibold'
-                    style={{ fontSize: 12, color: '#1d4ed8' }}
+                    style={{
+                      fontSize: 12,
+                      color: '#1d4ed8'
+                    }}
                   >
-                    Primary: Checked-in (Active Evacuee)
+                    Primary: Checked-in
+                    (Active Evacuee)
                   </div>
                 </div>
                 <span className='badge bg-primary'
@@ -325,7 +651,7 @@ export default function QRCheckIn() {
             </div>
           </div>
 
-          {/* ── Secondary Status ── */}
+          {/* Secondary Status */}
           <div className='card border-0 shadow-sm mb-3'>
             <div className='card-body p-4'>
 
@@ -340,7 +666,7 @@ export default function QRCheckIn() {
                 Special Conditions
               </div>
 
-              {/* None option */}
+              {/* None */}
               <div
                 className='d-flex align-items-center
                   gap-2 p-2 rounded border mb-2'
@@ -364,7 +690,11 @@ export default function QRCheckIn() {
                   None — No special condition
                 </span>
                 {selectedStatuses.length === 0 && (
-                  <span className='ms-auto fw-bold text-success'>✓</span>
+                  <span className='ms-auto fw-bold
+                    text-success'
+                  >
+                    ✓
+                  </span>
                 )}
               </div>
 
@@ -378,10 +708,14 @@ export default function QRCheckIn() {
                       className='px-3 py-2 rounded border
                         d-flex align-items-center gap-1'
                       style={{
-                        cursor: 'pointer', fontSize: 12,
-                        background: isSelected ? '#fff3cd' : '#f8f9fa',
-                        borderColor: isSelected ? '#ffc107' : '#dee2e6',
-                        color: isSelected ? '#856404' : '#6c757d',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        background: isSelected
+                          ? '#fff3cd' : '#f8f9fa',
+                        borderColor: isSelected
+                          ? '#ffc107' : '#dee2e6',
+                        color: isSelected
+                          ? '#856404' : '#6c757d',
                         transition: 'all 0.15s',
                         userSelect: 'none'
                       }}
@@ -392,24 +726,27 @@ export default function QRCheckIn() {
                       <span>{status.icon}</span>
                       <span>{status.label}</span>
                       {isSelected && (
-                        <span className='ms-1 fw-bold'>✓</span>
+                        <span className='ms-1 fw-bold'>
+                          ✓
+                        </span>
                       )}
                     </div>
                   )
                 })}
               </div>
 
-              {/* Others text */}
               {selectedStatuses.includes('others') && (
                 <input type='text'
-                  className='form-control form-control-sm mt-1'
-                  placeholder='Please specify condition...'
+                  className='form-control
+                    form-control-sm mt-1'
+                  placeholder='Please specify...'
                   value={othersText}
-                  onChange={(e) => setOthersText(e.target.value)}
+                  onChange={e =>
+                    setOthersText(e.target.value)
+                  }
                 />
               )}
 
-              {/* Selected summary */}
               {selectedStatuses.length > 0 && (
                 <div className='mt-2 p-2 rounded
                   bg-warning bg-opacity-10
@@ -418,7 +755,7 @@ export default function QRCheckIn() {
                   <div className='text-muted mb-1'
                     style={{ fontSize: 11 }}
                   >
-                    Selected conditions:
+                    Selected:
                   </div>
                   <div className='d-flex flex-wrap gap-1'>
                     {selectedStatuses.map(s => {
@@ -426,7 +763,8 @@ export default function QRCheckIn() {
                         .find(x => x.value === s)
                       return (
                         <span key={s}
-                          className='badge bg-warning text-dark'
+                          className='badge
+                            bg-warning text-dark'
                         >
                           {found?.icon} {found?.label}
                           {s === 'others' && othersText
@@ -439,17 +777,15 @@ export default function QRCheckIn() {
                     <div className='mt-1 text-muted'
                       style={{ fontSize: 11 }}
                     >
-                      💡 Needs auto-suggested based
-                      on selected conditions
+                      💡 Needs auto-suggested
                     </div>
                   )}
                 </div>
               )}
-
             </div>
           </div>
 
-          {/* ── Special Needs ── */}
+          {/* Special Needs */}
           <div className='card border-0 shadow-sm mb-3'>
             <div className='card-body p-4'>
 
@@ -469,9 +805,10 @@ export default function QRCheckIn() {
                 <div className='row g-2 mb-3'>
                   <div className='col-4'>
                     <div className='card border-0
-                      bg-primary bg-opacity-10 text-center p-2'
+                      bg-primary bg-opacity-10
+                      text-center p-2'
                     >
-                      <div className='fw-bold text-primary fs-5'>
+                      <div className='fw-bold text-primary'>
                         {medicineCount}
                       </div>
                       <div className='text-muted'
@@ -483,9 +820,10 @@ export default function QRCheckIn() {
                   </div>
                   <div className='col-4'>
                     <div className='card border-0
-                      bg-success bg-opacity-10 text-center p-2'
+                      bg-success bg-opacity-10
+                      text-center p-2'
                     >
-                      <div className='fw-bold text-success fs-5'>
+                      <div className='fw-bold text-success'>
                         {foodCount}
                       </div>
                       <div className='text-muted'
@@ -497,9 +835,10 @@ export default function QRCheckIn() {
                   </div>
                   <div className='col-4'>
                     <div className='card border-0
-                      bg-danger bg-opacity-10 text-center p-2'
+                      bg-danger bg-opacity-10
+                      text-center p-2'
                     >
-                      <div className='fw-bold text-danger fs-5'>
+                      <div className='fw-bold text-danger'>
                         {allergyCount}
                       </div>
                       <div className='text-muted'
@@ -512,14 +851,11 @@ export default function QRCheckIn() {
                 </div>
               )}
 
-              {/* Input row */}
-              <label className='form-label fw-medium'>
+              {/* Input */}
+              <label className='form-label fw-medium'
+                style={{ fontSize: 13 }}
+              >
                 🆘 Add Special Need
-                <span className='text-muted ms-2'
-                  style={{ fontSize: 11 }}
-                >
-                  (medicines, food, allergies)
-                </span>
               </label>
 
               <div className='d-flex gap-2 mb-3
@@ -529,27 +865,35 @@ export default function QRCheckIn() {
                   className='form-select'
                   style={{ maxWidth: 160 }}
                   value={needInput.type}
-                  onChange={(e) => setNeedInput({
+                  onChange={e => setNeedInput({
                     ...needInput, type: e.target.value
                   })}
                 >
-                  <option value='medicine'>💊 Medicine</option>
-                  <option value='special_food'>🍽️ Special Food</option>
-                  <option value='allergy'>🤧 Allergy</option>
+                  <option value='medicine'>
+                    💊 Medicine
+                  </option>
+                  <option value='special_food'>
+                    🍽️ Special Food
+                  </option>
+                  <option value='allergy'>
+                    🤧 Allergy
+                  </option>
                 </select>
 
                 <input type='text'
                   className='form-control'
                   placeholder={
-                    needInput.type === 'medicine' ? 'e.g. Bioflu'
-                    : needInput.type === 'special_food' ? 'e.g. Milk'
-                    : 'e.g. Chicken'
+                    needInput.type === 'medicine'
+                      ? 'e.g. Bioflu'
+                      : needInput.type === 'special_food'
+                      ? 'e.g. Milk'
+                      : 'e.g. Chicken'
                   }
                   value={needInput.name}
-                  onChange={(e) => setNeedInput({
+                  onChange={e => setNeedInput({
                     ...needInput, name: e.target.value
                   })}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
                       handleAddNeed()
@@ -562,9 +906,11 @@ export default function QRCheckIn() {
                     className='form-control'
                     placeholder='Qty'
                     style={{ maxWidth: 80 }}
-                    value={needInput.quantity} min={1}
-                    onChange={(e) => setNeedInput({
-                      ...needInput, quantity: e.target.value
+                    value={needInput.quantity}
+                    min={1}
+                    onChange={e => setNeedInput({
+                      ...needInput,
+                      quantity: e.target.value
                     })}
                   />
                 )}
@@ -577,7 +923,7 @@ export default function QRCheckIn() {
                 </button>
               </div>
 
-              {/* ✅ Table display */}
+              {/* Table */}
               {specialNeeds.length > 0 ? (
                 <div className='table-responsive'>
                   <table className='table table-bordered
@@ -590,13 +936,15 @@ export default function QRCheckIn() {
                         <th style={{ width: 120 }}>Type</th>
                         <th>Name</th>
                         <th style={{ width: 80 }}>Qty</th>
-                        <th style={{ width: 60 }}>Action</th>
+                        <th style={{ width: 60 }}></th>
                       </tr>
                     </thead>
                     <tbody>
                       {specialNeeds.map((item, index) => (
                         <tr key={item.id}>
-                          <td className='text-muted text-center'>
+                          <td className='text-muted
+                            text-center'
+                          >
                             {index + 1}
                           </td>
                           <td>
@@ -610,17 +958,15 @@ export default function QRCheckIn() {
                             {item.name}
                           </td>
                           <td className='text-center'>
-                            {item.type === 'allergy' ? (
-                              <span className='text-muted'>—</span>
-                            ) : (
-                              <span className='badge bg-secondary'>
-                                x{item.quantity}
-                              </span>
-                            )}
+                            {item.type === 'allergy'
+                              ? <span className='text-muted'>—</span>
+                              : <span className='badge bg-secondary'>
+                                  x{item.quantity}
+                                </span>
+                            }
                           </td>
                           <td className='text-center'>
-                            <button
-                              type='button'
+                            <button type='button'
                               className='btn btn-sm
                                 btn-outline-danger py-0'
                               onClick={() =>
@@ -638,14 +984,12 @@ export default function QRCheckIn() {
                         <td colSpan='5'
                           style={{ fontSize: 12 }}
                         >
-                          <div className='d-flex gap-3 text-muted'>
-                            <span>💊 {medicineCount} medicine(s)</span>
-                            <span>🍽️ {foodCount} food(s)</span>
-                            <span>🤧 {allergyCount} allergy(ies)</span>
-                            <span className='ms-auto fw-medium text-dark'>
-                              Total: {specialNeeds.length} item(s)
-                            </span>
-                          </div>
+                          <span className='text-muted'>
+                            💊 {medicineCount} •{' '}
+                            🍽️ {foodCount} •{' '}
+                            🤧 {allergyCount} •{' '}
+                            Total: {specialNeeds.length}
+                          </span>
                         </td>
                       </tr>
                     </tfoot>
@@ -659,11 +1003,10 @@ export default function QRCheckIn() {
                   No special needs added yet
                 </div>
               )}
-
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Action buttons */}
           <div className='d-flex gap-2'>
             <button
               className='btn btn-danger flex-grow-1'
@@ -682,8 +1025,9 @@ export default function QRCheckIn() {
             <button
               className='btn btn-outline-secondary'
               onClick={() => {
-                setScannedUser(null)
                 resetAll()
+                setMode('choose')
+                setError('')
               }}
             >
               ✕ Cancel

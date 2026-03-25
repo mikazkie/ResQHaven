@@ -17,7 +17,7 @@ const SIMULATIONS = [
           name: 'Typhoon SIMULATION-HENRY',
           severity: 'Signal No. 1',
           wind_speed: 60,
-          affected_areas: 'Cebu City, Mandaue, Lapu-Lapu',
+          affected_areas: 'Bacolod City, Mandaue, Lapu-Lapu',
           source: 'PAGASA SIMULATION'
         }
       },
@@ -52,7 +52,7 @@ const SIMULATIONS = [
           magnitude: 5.0,
           latitude: 10.3157,
           longitude: 123.8854,
-          affected_areas: 'Cebu City, Talisay',
+          affected_areas: 'Bacolod City, Talisay',
           source: 'PHIVOLCS SIMULATION'
         }
       },

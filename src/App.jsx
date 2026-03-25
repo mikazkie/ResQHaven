@@ -29,6 +29,8 @@ import FamilyCheckIn from './components/pages/admin/forms/familyCheckIn';
 import Hotline from './components/pages/admin/forms/hotline';
 
 import FoodReport from './components/pages/admin/Fetch/report'
+import Track from './components/pages/admin/Fetch/track'
+
 function App() {
 
   return (
@@ -49,6 +51,13 @@ function App() {
           <Route path='/evacuation-reg' element={
             <ProtectedRoute roles={['super_admin','barangay_official']}>
                 <EvacuationCenter/>
+            </ProtectedRoute>}/>
+
+
+
+            <Route path='/track' element={
+            <ProtectedRoute roles={['super_admin','barangay_official']}>
+                <Track/>
             </ProtectedRoute>}/>
             
 
@@ -86,6 +95,11 @@ function App() {
 
 
             <Route path='/evacuation/evac-list/:id/user/:id' element={
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+                <Profile/>
+            </ProtectedRoute>}/>
+
+            <Route path='track/user/:id' element={
             <ProtectedRoute roles={['barangay_official', 'super_admin']}>
                 <Profile/>
             </ProtectedRoute>}/>

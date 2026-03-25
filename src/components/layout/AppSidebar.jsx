@@ -5,20 +5,14 @@ import { useAuth } from "../../authentication/AuthContext";
 
 const navItems = [
   {
-    icon: "⊞",
+    icon: <i className="bi bi-house"></i>,
     name: "Dashboard",
-    subItems: [
-      { 
-        name: "Ecommerce", 
-        path: "/dashboard",
-        roles: ['super_admin', 'center_staff']
-      }
-    ]
-
+    path: "/dashboard",
+    roles: ['super_admin', 'center_staff']
   },
   {
-    icon: "👤",
-    name: "Reports",
+    icon: <i className="bi bi-pie-chart"></i>,
+    name: "Analytics",
     subItems:[
       {
         name: "Reports",
@@ -29,7 +23,7 @@ const navItems = [
   },
   {
     name: "Forms",
-    icon: "📋",
+    icon: <i className="bi bi-clipboard-check"></i>,
     subItems: [
       {
         name: "Check In",
@@ -74,11 +68,16 @@ const navItems = [
 
 const othersItems = [
   {
-    icon: "🥧",
+    icon: <i className="bi bi-controller"></i>,
     name: "Simulations",
     subItems: [
       { name: "Simulate", path: "/simulate" },
     ],
+  },
+  {
+    icon: <i className="bi bi-geo"></i>,
+    name: "Track",
+    path: '/track'
   }
 ];
 
