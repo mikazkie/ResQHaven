@@ -51,7 +51,7 @@ export default function Track() {
       setError('')
 
       const res = await getRequest(
-        `api/track?search=${search.trim()}&barangay=${barangay.trim()}&municipality=${city.trim()}&province=${province.trim()}`
+        `api/track?search=${search.trim()}&barangay=${barangay.trim()}&city=${city.trim()}&province=${province.trim()}`
       )
 
       setUsers(res.users || [])
