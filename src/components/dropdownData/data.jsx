@@ -1,4 +1,4 @@
-const SECONDARY_STATUS = [
+export const SECONDARY_STATUS = [
   { value: 'injured',
     label: 'Injured', icon: '🤕' },
   { value: 'chronic_illness',

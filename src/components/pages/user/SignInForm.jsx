@@ -45,8 +45,11 @@ export default function SignInForm() {
         
         console.log(response.user.role);
         
-        if(response.user.role != 'user'){
-        navigate('/admin-reg')
+        if(response.user.role === 'super_admin'){
+        navigate('/dashboard')
+        }
+        else if(response.user.role === 'barangay_official'){
+        navigate('/check-reg')
         }
         else{
           navigate('/')

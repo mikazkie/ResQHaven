@@ -16,7 +16,7 @@ export default function Profile() {
     const fetchProfile = async () => {
       try {
         const response = await getRequest(
-          `api/profile/${id}`
+          `/api/profile/${id}`
         )
         if (response.success) {
           setEvacuee(response.evacuee)
@@ -32,7 +32,7 @@ export default function Profile() {
     fetchProfile()
   }, [id])
 
-  
+  const fulladminName = evacuee?.adminFN + ' ' +  evacuee?.adminLN 
 const serveNeed = async (needId, type) => {
   try {
 
@@ -208,7 +208,7 @@ const serveNeed = async (needId, type) => {
               <h6 className='fw-bold mb-3
                 border-bottom pb-2'
               >
-                👤 Personal Information
+                Personal Information
               </h6>
 
               <div className='row g-3'>
@@ -265,7 +265,7 @@ const serveNeed = async (needId, type) => {
                   </div>
                 </div>
 
-                <div className='col-12'>
+                <div className='col-6'>
                   <div className='text-muted'
                     style={{ fontSize: 12 }}
                   >
@@ -279,6 +279,21 @@ const serveNeed = async (needId, type) => {
                     {evacuee.province}
                   </div>
                 </div>
+
+                <div className='col-6'>
+                  <div className='text-muted'
+                    style={{ fontSize: 12 }}
+                  >
+                    Status
+                  </div>
+                  <div className='fw-medium'
+                    style={{ fontSize: 14 }}
+                  >
+                    {evacuee.primary_status || 'N/A'}
+                  </div>
+                </div>
+
+
               </div>
             </div>
           </div>
@@ -304,34 +319,9 @@ const serveNeed = async (needId, type) => {
                   <div className='fw-medium'
                     style={{ fontSize: 14 }}
                   >
-                    {evacuee?.name || 'N/A'}
+                    {evacuee?.center_name || 'N/A'}
                   </div>
 
-                  {/* Capacity Bar */}
-                  {evacuee.center && (
-                    <div className='mt-1'>
-                      <div className='progress'
-                        style={{ height: 6 }}
-                      >
-                        <div
-                          className={`progress-bar ${
-                            pct >= 90
-                              ? 'bg-danger'
-                              : pct >= 70
-                              ? 'bg-warning'
-                              : 'bg-success'
-                          }`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <div className='text-muted mt-1'
-                        style={{ fontSize: 11 }}
-                      >
-                        {evacuee.center.current_occupancy}/
-                        {evacuee.center.capacity} capacity
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className='col-6'>
@@ -375,7 +365,7 @@ const serveNeed = async (needId, type) => {
                   <div className='fw-medium'
                     style={{ fontSize: 14 }}
                   >
-                    {evacuee?.adminFN + ' ' +  evacuee?.adminLN || 'N/A'}
+                    {fulladminName !== null  ?  fulladminName  : 'N/A'}
                   </div>
                 </div>
 
