@@ -61,7 +61,8 @@ const navItems = [
     name: "Tables",
     icon: "📊",
     subItems: [
-      { name: "Evacuation Center", path: "/evacuation" }
+      { name: "Evacuation Center", path: "/evacuation" },
+      { name: "Inventory", path: "/inventory" }
     ],
   },
 ];

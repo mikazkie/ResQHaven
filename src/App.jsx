@@ -18,6 +18,7 @@ import Check from './components/pages/admin/forms/check';
 
 import Evacuation from './components/pages/admin/Fetch/evacuation';
 import Listing from './components/pages/admin/Fetch/listing';
+import Inventory from './components/pages/admin/Fetch/inventory';
 
 import Profile from './components/pages/admin/Fetch/profile';
 import Dashboard from './components/pages/admin/Fetch/dashboard';
@@ -85,6 +86,11 @@ function App() {
             <Route path='/evacuation' element={
             <ProtectedRoute roles={['barangay_official', 'super_admin']}>
                 <Evacuation/>
+            </ProtectedRoute>}/>
+
+            <Route path='/inventory' element={
+            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+                <Inventory/>
             </ProtectedRoute>}/>
 
 
