@@ -2,6 +2,7 @@ import { useState } from 'react'
 import QRScanner from '../../../../components/QR/scan'
 import { postRequest, getRequest }
   from '../../../../API/API'
+import "../../../styles/familyCheckIn.css"
 
 // ✅ Secondary status config
 const SECONDARY_STATUS = [
@@ -344,7 +345,7 @@ export default function QRCheckIn() {
             <div className='col-md-6'>
               <div
                 className='card border-0 shadow-sm
-                  text-center p-4 h-100'
+                  text-center p-4 h-100 hover-success'
                 style={{ cursor: 'pointer' }}
                 onClick={() => setMode('qr')}
               >
@@ -372,7 +373,7 @@ export default function QRCheckIn() {
             <div className='col-md-6'>
               <div
                 className='card border-0 shadow-sm
-                  text-center p-4 h-100'
+                  text-center p-4 h-100 hover-primary'
                 style={{ cursor: 'pointer' }}
                 onClick={() => setMode('search')}
               >
