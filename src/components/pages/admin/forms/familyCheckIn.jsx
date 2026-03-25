@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { postRequest, getRequest }
   from '../../../../API/API'
-
+import "../../../styles/familyCheckIn.css"
 // ── Member Card Component ──
 function MemberCard({
   member, index, onRemove
@@ -282,9 +282,9 @@ export default function FamilyCheckIn() {
                   <div className='row g-3 mb-3'>
                     <div className='col-6'>
                       <div
-                        className='card
-                          border-success
-                          text-center p-3'
+                      className='card border-success 
+                      text-center p-3 
+                      hover-success'
                         style={{ cursor: 'pointer' }}
                         onClick={() =>
                           setHeadType('existing')
@@ -311,9 +311,9 @@ export default function FamilyCheckIn() {
                     </div>
                     <div className='col-6'>
                       <div
-                        className='card
-                          border-primary
-                          text-center p-3'
+                      className='card border-primary 
+                      text-center p-3 
+                      hover-primary'
                         style={{ cursor: 'pointer' }}
                         onClick={() =>
                           setHeadType('new')

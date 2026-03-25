@@ -1,7 +1,10 @@
  import { useState, useEffect } from 'react';
 import '../styles/Sidebar.css'
 import { getRequest } from '../../API/API';
+import { useNavigate } from 'react-router';
 function Sidebar() {
+  
+  const navigate = useNavigate();
 
   const hazardZones = [
     { color: '#ef4444', label: 'Very High' },
@@ -75,23 +78,40 @@ const [alerts, setAlerts] = useState([])
     <div className='d-flex flex-column p-3 bg-white h-100 overflow-auto'>
 
       {/* Header */}
-      <div className='d-flex align-items-center 
-        gap-2 p-3 rounded-3 mb-3'
+      <div
+        className='d-flex align-items-center justify-content-between gap-2 p-3 rounded-3 mb-3'
         style={{ background: '#ef4444' }}
       >
-        <span style={{ fontSize: 28 }}>🛡️</span>
-        <div>
-          <div className='fw-bold text-white'
-            style={{ fontSize: 16 }}
-          >
-            DisasterPH
-          </div>
-          <div className='text-white opacity-75'
-            style={{ fontSize: 10 }}
-          >
-            Early Warning System
+        {/* LEFT SIDE (Logo + Title) */}
+        <div className='d-flex align-items-center gap-2'>
+          <span style={{ fontSize: 28 }}>🛡️</span>
+          <div>
+            <div
+              className='fw-bold text-white'
+              style={{ fontSize: 16 }}
+            >
+              DisasterPH
+            </div>
+            <div
+              className='text-white opacity-75'
+              style={{ fontSize: 10 }}
+            >
+              Early Warning System
+            </div>
           </div>
         </div>
+
+        {/* RIGHT SIDE (Back Button) */}
+        <button
+          onClick={() => navigate(-1)}
+          className='btn btn-light btn-sm d-flex align-items-center gap-1'
+          style={{
+            fontSize: 12,
+            fontWeight: 600
+          }}
+        >
+          ➤
+        </button>
       </div>
 
       {/* Hazard Zones */}

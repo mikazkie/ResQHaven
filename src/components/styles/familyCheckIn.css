@@ -1,0 +1,19 @@
+/* Existing user (GREEN) */
+.hover-success {
+  transition: all 0.2s ease;
+}
+.hover-success:hover {
+  background-color: rgba(34, 197, 94, 0.1); /* light green */
+  border-color: #22c55e !important;
+  transform: scale(1.02);
+}
+
+/* New user (BLUE) */
+.hover-primary {
+  transition: all 0.2s ease;
+}
+.hover-primary:hover {
+  background-color: rgba(59, 130, 246, 0.1); /* light blue */
+  border-color: #3b82f6 !important;
+  transform: scale(1.02);
+}
