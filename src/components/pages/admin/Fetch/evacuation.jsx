@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router"
 import Cards from "../../../layout/cards"
 import { getRequest, putRequest } from "../../../../API/API"
 import { useAuth } from "../../../../authentication/AuthContext"
 
 function Evacuation() {
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   const [centers, setCenters] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,14 +23,16 @@ function Evacuation() {
   }
 
   useEffect(() => {
-    if (user?.role === 'barangay_official' && user?.assigned_center_id) {
-      navigate(`/evacuation/evac-list/${user.assigned_center_id}`, { replace: true })
-      return
+    fetchCenters()
+  }, [])
+
+  const visibleCenters = centers.filter((center) => {
+    if (user?.role === 'barangay_official') {
+      return Number(center.id) === Number(user?.assigned_center_id)
     }
 
-    fetchCenters()
-
-  }, [navigate, user?.assigned_center_id, user?.role])
+    return true
+  })
 
   const handleStatusChange = async (centerId, status) => {
     const currentCenter = centers.find((center) => Number(center.id) === Number(centerId))
@@ -75,7 +75,7 @@ function Evacuation() {
         </div>
       ) : (
         <Cards
-          center={centers}
+          center={visibleCenters}
           canManageStatus={user?.role === 'drrmo'}
           onStatusChange={handleStatusChange}
           updatingCenterId={updatingCenterId}
