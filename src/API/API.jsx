@@ -26,7 +26,16 @@ api.interceptors.request.use((config) => {
 })
 
 export const getRequest = async (endpoint) => {
-  const response = await api.get(endpoint)
+  const separator = endpoint.includes('?') ? '&' : '?'
+  const cacheBustedEndpoint = `${endpoint}${separator}_ts=${Date.now()}`
+
+  const response = await api.get(cacheBustedEndpoint, {
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0'
+    }
+  })
   return response.data
 }
 
