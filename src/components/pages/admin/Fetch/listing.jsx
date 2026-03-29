@@ -1024,12 +1024,19 @@ function Listing() {
         <div className="d-flex d-md-none flex-column gap-3">
           {filtered.length > 0 ? (
             filtered.map((evacuee, index) => (
-              <button
+              <div
                 key={evacuee.checkin_id || evacuee.id || index}
-                type="button"
                 className="border rounded-4 p-3 bg-white text-start w-100"
                 style={{ boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)" }}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`user/${evacuee.id}`)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    navigate(`user/${evacuee.id}`);
+                  }
+                }}
               >
                 <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
                   <div>
@@ -1067,7 +1074,7 @@ function Listing() {
                     </span>
                   </div>
                 </div>
-              </button>
+              </div>
             ))
           ) : (
             <div className="border rounded-4 p-4 text-center text-muted" style={{ fontSize: 13 }}>
@@ -1289,12 +1296,19 @@ function CompactActionTable({
       <div className="d-flex d-md-none flex-column gap-3">
         {rows.length > 0 ? (
           rows.map((user, index) => (
-            <button
+            <div
               key={user.checkin_id || `${user.id}-${index}`}
-              type="button"
               className="border rounded-4 p-3 bg-white text-start w-100"
               style={{ boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)" }}
+              role="button"
+              tabIndex={0}
               onClick={() => onRowClick(user)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onRowClick(user);
+                }
+              }}
             >
               <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
                 <div>
@@ -1356,7 +1370,7 @@ function CompactActionTable({
                   {user.primary_status || "Unknown"}
                 </span>
               </div>
-            </button>
+            </div>
           ))
         ) : (
           <div className="border rounded-4 p-4 text-center text-muted" style={{ fontSize: 13 }}>
