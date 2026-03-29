@@ -37,6 +37,7 @@ export default function Sidebar({ user, profile, onSignOut }) {
   const [centers, setCenters] = useState([])
   const [weather, setWeather] = useState(null)
   const [hotlines, setHotlines] = useState([])
+  const [currentLocation, setCurrentLocation] = useState(null)
   const isEndUser = !user || user.role === 'user'
 
   useEffect(() => {
@@ -59,6 +60,30 @@ export default function Sidebar({ user, profile, onSignOut }) {
     }
 
     fetchData()
+  }, [])
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentLocation({
+          label: 'Current location',
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        })
+      },
+      () => {
+        setCurrentLocation(null)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    )
   }, [])
 
   const availableCenters = useMemo(() => {
@@ -108,6 +133,34 @@ export default function Sidebar({ user, profile, onSignOut }) {
             </div>
           )}
         </div>
+      </div>
+
+      <div className='user-sidebar-card'>
+        <div className='user-sidebar-section-head'>
+          <h3>Current Location</h3>
+          <span className='user-sidebar-caption'>Device GPS</span>
+        </div>
+
+        {currentLocation ? (
+          <div className='user-weather-card'>
+            <div className='user-weather-main'>
+              <strong>{currentLocation.label}</strong>
+              <span>Available</span>
+            </div>
+            <div className='user-weather-meta'>
+              <div>
+                <span className='user-data-label'>Latitude</span>
+                <strong>{currentLocation.latitude.toFixed(5)}</strong>
+              </div>
+              <div>
+                <span className='user-data-label'>Longitude</span>
+                <strong>{currentLocation.longitude.toFixed(5)}</strong>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className='user-sidebar-empty'>Current location is unavailable.</div>
+        )}
       </div>
 
       <div className='user-sidebar-card'>

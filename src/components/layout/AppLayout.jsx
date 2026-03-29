@@ -50,6 +50,10 @@ function LayoutContent() {
           .main-area {
             margin-left: 0 !important;
           }
+
+          .main-area main {
+            padding: 14px !important;
+          }
         }
       `}</style>
     </div>

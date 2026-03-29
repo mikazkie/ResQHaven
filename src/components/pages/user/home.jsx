@@ -281,7 +281,7 @@ function Home() {
   }
 
   return (
-    <div className='user-home-shell'>
+    <div className={`user-home-shell ${isSidebarOpen ? 'panel-open' : ''}`}>
       <div className='user-home-content'>
         <main className='user-main-panel'>
           <div className='user-main-topbar'>

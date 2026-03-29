@@ -37,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 16px 96px;
+  padding: 24px 14px 88px;
   background:
     radial-gradient(circle at top left, rgba(191, 219, 254, 0.45), transparent 32%),
     radial-gradient(circle at top right, rgba(254, 226, 226, 0.4), transparent 28%),
@@ -304,49 +304,39 @@
 
 @media (max-width: 768px) {
   .user-home-content {
-    padding: 16px 16px 100px;
-    gap: 16px;
+    padding: 12px 12px 86px;
+    gap: 12px;
   }
 
   .user-panel-card,
   .user-map-card {
-    padding: 18px;
-    border-radius: 22px;
+    padding: 14px;
+    border-radius: 20px;
   }
 
   .user-map-frame {
-    min-height: 420px;
-    height: 58vh;
+    min-height: 360px;
+    height: 50vh;
+    border-radius: 20px;
   }
 
   .user-overlay-toggle {
     display: inline-flex;
     margin-bottom: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
   }
 
   .user-main-topbar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
   }
 
   .user-auth-topbar {
-    display: block;
-  }
-
-  .user-auth-topbar .user-bottom-nav {
-    position: static;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    transform: none;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: 100%;
-    padding: 6px;
-    border-radius: 16px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    display: contents;
   }
 
   .user-auth-stack {
@@ -356,26 +346,11 @@
 
   .user-auth-page {
     align-items: flex-start;
-    padding-top: 20px;
+    padding-top: 16px;
   }
 
   .user-auth-card-inner {
-    padding: 24px 20px;
-  }
-
-  .user-main-topbar .user-bottom-nav {
-    position: static;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    transform: none;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    flex: 1;
-    min-width: 0;
-    padding: 6px;
-    border-radius: 16px;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    padding: 20px 16px;
   }
 
   .user-profile-grid {
@@ -388,10 +363,10 @@
 
   .user-sidebar-panel {
     position: fixed;
-    top: 12px;
-    right: 12px;
-    bottom: 88px;
-    width: min(360px, calc(100vw - 24px));
+    top: 10px;
+    right: 10px;
+    bottom: 78px;
+    width: min(360px, calc(100vw - 20px));
     z-index: 1200;
     overflow-y: auto;
     transform: translateX(calc(100% + 16px));
@@ -412,16 +387,35 @@
   }
 
   .user-bottom-nav {
-    left: 16px;
-    right: 16px;
+    left: 12px;
+    right: 12px;
     bottom: 12px;
     transform: none;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 6px;
+    border-radius: 16px;
   }
 
   .user-bottom-nav button {
     min-width: 0;
-    padding-inline: 10px;
+    padding: 10px 8px;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .user-chat-shell {
+    right: 12px;
+    bottom: 76px;
+    z-index: 1005;
+  }
+
+  .user-home-shell.panel-open .user-chat-shell {
+    display: none;
+  }
+
+  .user-map-card-header p,
+  .user-panel-card p {
+    font-size: 13px;
   }
 }
