@@ -959,7 +959,7 @@ function Listing() {
           </div>
         </div>
 
-        <div className="table-responsive">
+        <div className="table-responsive d-none d-md-block">
           <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
             <thead className="table-light">
               <tr>
@@ -1019,6 +1019,63 @@ function Listing() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="d-flex d-md-none flex-column gap-3">
+          {filtered.length > 0 ? (
+            filtered.map((evacuee, index) => (
+              <button
+                key={evacuee.checkin_id || evacuee.id || index}
+                type="button"
+                className="border rounded-4 p-3 bg-white text-start w-100"
+                style={{ boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)" }}
+                onClick={() => navigate(`user/${evacuee.id}`)}
+              >
+                <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
+                  <div>
+                    <div className="fw-semibold">
+                      {index + 1}. {evacuee.firstName} {evacuee.lastName}
+                    </div>
+                    <div className="text-muted" style={{ fontSize: 12 }}>
+                      {evacuee.sex || "Unknown"}
+                    </div>
+                  </div>
+                  <span
+                    className={`badge ${
+                      evacuee.checkout_at
+                        ? "bg-secondary-subtle text-secondary-emphasis"
+                        : "bg-success-subtle text-success-emphasis"
+                    }`}
+                  >
+                    {evacuee.checkout_at ? "Checked Out" : "Inside"}
+                  </span>
+                </div>
+
+                <div className="d-flex flex-column gap-2" style={{ fontSize: 12 }}>
+                  <div>
+                    <span className="text-muted">Email: </span>
+                    <span>{evacuee.email || "Not available"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted">Barangay: </span>
+                    <span>{evacuee.barangay || "Not available"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted">Primary Status: </span>
+                    <span className="badge bg-info-subtle text-info-emphasis ms-1">
+                      {evacuee.primary_status || "Unknown"}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))
+          ) : (
+            <div className="border rounded-4 p-4 text-center text-muted" style={{ fontSize: 13 }}>
+              {search
+                ? "No evacuees match the current search."
+                : "No evacuees are currently listed for this center."}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1142,7 +1199,7 @@ function CompactActionTable({
         {headerAction}
       </div>
 
-      <div className="table-responsive">
+      <div className="table-responsive d-none d-md-block">
         <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
           <thead className="table-light">
             <tr>
@@ -1227,6 +1284,85 @@ function CompactActionTable({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="d-flex d-md-none flex-column gap-3">
+        {rows.length > 0 ? (
+          rows.map((user, index) => (
+            <button
+              key={user.checkin_id || `${user.id}-${index}`}
+              type="button"
+              className="border rounded-4 p-3 bg-white text-start w-100"
+              style={{ boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)" }}
+              onClick={() => onRowClick(user)}
+            >
+              <div className="d-flex justify-content-between align-items-start gap-3 mb-2">
+                <div>
+                  <div className="fw-semibold">
+                    {index + 1}. {user.firstName} {user.lastName}
+                  </div>
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    {user.sex || "Unknown"}
+                  </div>
+                </div>
+                <div onClick={(event) => event.stopPropagation()}>
+                  {onActionClick ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm rounded-pill px-3"
+                      onClick={() => onActionClick(user)}
+                      disabled={actionDisabled}
+                    >
+                      {actionLabel}
+                    </button>
+                  ) : (
+                    <span className="text-muted" style={{ fontSize: 12 }}>
+                      {actionLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-2">
+                <span className="text-muted" style={{ fontSize: 12 }}>Needs:</span>
+                <div className="d-flex flex-wrap gap-1 align-items-center mt-1">
+                  {user.food ? <span className="badge bg-primary-subtle text-primary-emphasis">Food</span> : null}
+                  {user.water ? <span className="badge bg-info-subtle text-info-emphasis">Water</span> : null}
+                  {user.medical ? <span className="badge bg-warning-subtle text-warning-emphasis">Med</span> : null}
+                  {user.special_food ? <span className="badge bg-success-subtle text-success-emphasis">Special Food</span> : null}
+                  {user.allergy ? <span className="badge bg-danger-subtle text-danger-emphasis">Allergy</span> : null}
+                  {!hasVisibleNeeds(user) ? (
+                    <span className="text-muted" style={{ fontSize: 11 }}>None</span>
+                  ) : null}
+                  {(user.medical || user.special_food) ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm rounded-pill px-2 py-1"
+                      style={{ fontSize: 11 }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onNeedsClick(user);
+                      }}
+                    >
+                      View
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div style={{ fontSize: 12 }}>
+                <span className="text-muted">Primary Status: </span>
+                <span className="badge bg-info-subtle text-info-emphasis ms-1">
+                  {user.primary_status || "Unknown"}
+                </span>
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="border rounded-4 p-4 text-center text-muted" style={{ fontSize: 13 }}>
+            {emptyText}
+          </div>
+        )}
       </div>
 
       {footer ? <div className="pt-3">{footer}</div> : null}
