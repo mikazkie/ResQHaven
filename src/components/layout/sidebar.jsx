@@ -35,6 +35,7 @@ const DISASTER_CONFIG = {
 export default function Sidebar({ user, profile, onSignOut }) {
   const [alerts, setAlerts] = useState([])
   const [centers, setCenters] = useState([])
+  const [hazards, setHazards] = useState([])
   const [weather, setWeather] = useState(null)
   const [hotlines, setHotlines] = useState([])
   const [currentLocation, setCurrentLocation] = useState(null)
@@ -43,15 +44,17 @@ export default function Sidebar({ user, profile, onSignOut }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [alertsResponse, centersResponse, weatherResponse, hotlinesResponse] = await Promise.all([
+        const [alertsResponse, centersResponse, hazardsResponse, weatherResponse, hotlinesResponse] = await Promise.all([
           getRequest('api/alerts'),
           getRequest('api/evacuations'),
+          getRequest('api/hazards'),
           getRequest('api/weather/pagasa'),
           getRequest('api/hotlines')
         ])
 
         setAlerts(alertsResponse.data || [])
         setCenters(Array.isArray(centersResponse) ? centersResponse : [])
+        setHazards(Array.isArray(hazardsResponse) ? hazardsResponse : [])
         setWeather(weatherResponse.weather || null)
         setHotlines(hotlinesResponse.data || [])
       } catch (error) {
@@ -93,6 +96,12 @@ export default function Sidebar({ user, profile, onSignOut }) {
   }, [centers])
 
   const displayName = `${user?.firstname || profile?.firstName || 'Guest'} ${user?.lastname || profile?.lastName || ''}`.trim()
+  const currentAreaLabel = currentLocation?.label || [
+    profile?.barangay,
+    profile?.city || profile?.municipality,
+    profile?.province
+  ].filter(Boolean).join(', ') || 'Unavailable'
+  const openCentersCount = centers.filter((center) => center.status === 'open').length
 
   return (
     <div className='user-sidebar-shell'>
@@ -130,8 +139,33 @@ export default function Sidebar({ user, profile, onSignOut }) {
                 Family Registration
               </Link>
               <Link to='/login' className='btn btn-outline-secondary w-100'>Sign in</Link>
+              <Link to='/signUp' className='btn btn-light w-100 border'>
+                Register
+              </Link>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className='user-sidebar-card'>
+        <div className='user-sidebar-section-head'>
+          <h3>Area Summary</h3>
+          <span className='user-sidebar-caption'>Live map data</span>
+        </div>
+
+        <div className='user-summary-grid'>
+          <div className='user-summary-item user-summary-item-wide'>
+            <span className='user-data-label'>Current Area</span>
+            <strong>{currentAreaLabel}</strong>
+          </div>
+          <div className='user-summary-item'>
+            <span className='user-data-label'>Open Centers</span>
+            <strong>{openCentersCount}</strong>
+          </div>
+          <div className='user-summary-item'>
+            <span className='user-data-label'>Hazard Zones</span>
+            <strong>{hazards.length}</strong>
+          </div>
         </div>
       </div>
 

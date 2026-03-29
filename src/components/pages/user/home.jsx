@@ -161,14 +161,7 @@ function QrPanel({ user }) {
 function DashboardPanel() {
   return (
     <div className='user-dashboard-panel'>
-      <div className='user-map-card'>
-        <div className='user-map-card-header'>
-          <div>
-            <span className='user-panel-kicker'>Live Map</span>
-            <h2>Safety Map</h2>
-            <p>Track hazard areas, evacuation centers, and safe routes around Bacolod and Negros Occidental.</p>
-          </div>
-        </div>
+      <div className='user-map-card user-map-card-noah'>
         <div className='user-map-frame'>
           <Map />
           <div className='user-chat-shell'>

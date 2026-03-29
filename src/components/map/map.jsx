@@ -39,6 +39,25 @@ const hazardColors = {
   low: '#22c55e'
 }
 
+const hazardHeatConfig = {
+  very_high: {
+    radii: [1500, 1100, 700],
+    opacities: [0.1, 0.18, 0.28]
+  },
+  high: {
+    radii: [1300, 900, 550],
+    opacities: [0.08, 0.14, 0.22]
+  },
+  moderate: {
+    radii: [1000, 700, 420],
+    opacities: [0.07, 0.11, 0.18]
+  },
+  low: {
+    radii: [800, 520, 280],
+    opacities: [0.05, 0.08, 0.12]
+  }
+}
+
 function getDistanceInKm(start, end) {
   const toRad = (value) => (value * Math.PI) / 180
   const earthRadiusKm = 6371
@@ -108,55 +127,17 @@ const FocusOnLocation = ({ location }) => {
   return null
 }
 
-function MapHud({
-  selectedCenter,
-  centerCount,
-  hazardCount,
-  userLocationLabel,
-  selectedCenterDistance
-}) {
+function MapHud() {
   return (
-    <>
-      <div style={styles.topHud}>
-        <div style={styles.hudCard}>
-          <span style={styles.hudLabel}>Current Area</span>
-          <strong>{userLocationLabel}</strong>
+    <div style={styles.legend}>
+      <div style={styles.legendTitle}>Hazard Levels</div>
+      {Object.entries(hazardColors).map(([key, color]) => (
+        <div key={key} style={styles.legendItem}>
+          <span style={{ ...styles.legendDot, background: color }} />
+          <span>{key.replace('_', ' ')}</span>
         </div>
-        <div style={styles.hudCard}>
-          <span style={styles.hudLabel}>Open Centers</span>
-          <strong>{centerCount}</strong>
-        </div>
-        <div style={styles.hudCard}>
-          <span style={styles.hudLabel}>Hazard Zones</span>
-          <strong>{hazardCount}</strong>
-        </div>
-      </div>
-
-      <div style={styles.legend}>
-        <div style={styles.legendTitle}>Hazard Levels</div>
-        {Object.entries(hazardColors).map(([key, color]) => (
-          <div key={key} style={styles.legendItem}>
-            <span style={{ ...styles.legendDot, background: color }} />
-            <span>{key.replace('_', ' ')}</span>
-          </div>
-        ))}
-      </div>
-
-      {selectedCenter && (
-        <div style={styles.bottomHud}>
-          <span style={styles.hudLabel}>Selected Center</span>
-          <strong>{selectedCenter.name}</strong>
-          <span style={styles.bottomHudText}>
-            {selectedCenter.current_occupancy} / {selectedCenter.capacity} occupants
-          </span>
-          {selectedCenterDistance !== null && (
-            <span style={styles.bottomHudText}>
-              {selectedCenterDistance.toFixed(1)} km from your location
-            </span>
-          )}
-        </div>
-      )}
-    </>
+      ))}
+    </div>
   )
 }
 
@@ -193,6 +174,41 @@ function createPopupContent(center, occupancy, distanceKm) {
       ` : ''}
     </div>
   `
+}
+
+function HazardHeatLayer({ hazardZones }) {
+  return (
+    <>
+      {hazardZones.map((zone) => {
+        const level = zone.level || zone.flood_risk || 'low'
+        const color = hazardColors[level] || '#94a3b8'
+        const config = hazardHeatConfig[level] || hazardHeatConfig.low
+
+        return config.radii.map((radius, index) => (
+          <Circle
+            key={`${zone.id || `${zone.latitude}-${zone.longitude}`}-heat-${index}`}
+            center={[zone.latitude, zone.longitude]}
+            radius={radius}
+            pathOptions={{
+              color,
+              fillColor: color,
+              fillOpacity: config.opacities[index] || 0.08,
+              opacity: index === config.radii.length - 1 ? 0.55 : 0,
+              weight: index === config.radii.length - 1 ? 1.2 : 0
+            }}
+          >
+            {index === config.radii.length - 1 ? (
+              <Popup>
+                <strong>{zone.barangay || 'Hazard Area'}</strong>
+                <div>Risk: {level.replace('_', ' ')}</div>
+                <div>Type: {zone.disaster_type || 'General hazard'}</div>
+              </Popup>
+            ) : null}
+          </Circle>
+        ))
+      })}
+    </>
+  )
 }
 
 function ClusteredCenters({ centers, centerIcon, onSelectCenter, userLocation }) {
@@ -272,6 +288,19 @@ export default function Map() {
   const [centers, setCenters] = useState([])
   const [hazardZones, setHazardZones] = useState([])
   const [selectedCenter, setSelectedCenter] = useState(null)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.innerWidth <= 768 : false
+  )
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -333,13 +362,6 @@ export default function Map() {
     popupAnchor: [0, -34]
   }), [])
 
-  const selectedCenterDistance = selectedCenter
-    ? getDistanceInKm(userLocation, {
-        lat: Number(selectedCenter.latitude),
-        lng: Number(selectedCenter.longitude)
-      })
-    : null
-
   if (!userLocation) {
     return (
       <div style={styles.loading}>
@@ -380,6 +402,19 @@ export default function Map() {
           border-bottom-left-radius: 18px !important;
           border-bottom-right-radius: 18px !important;
         }
+
+        @media (max-width: 768px) {
+          .leaflet-control-zoom {
+            width: 40px;
+          }
+
+          .leaflet-control-zoom a {
+            width: 33px !important;
+            height: 33px !important;
+            line-height: 34px !important;
+            font-size: 17px !important;
+          }
+        }
       `}</style>
 
       <MapContainer
@@ -401,25 +436,7 @@ export default function Map() {
           </Popup>
         </Marker>
 
-        {hazardZones.map((zone) => (
-          <Circle
-            key={zone.id || `${zone.latitude}-${zone.longitude}`}
-            center={[zone.latitude, zone.longitude]}
-            radius={500}
-            pathOptions={{
-              color: hazardColors[zone.level || zone.flood_risk] || '#94a3b8',
-              fillColor: hazardColors[zone.level || zone.flood_risk] || '#94a3b8',
-              fillOpacity: 0.18,
-              weight: 2
-            }}
-          >
-            <Popup>
-              <strong>{zone.barangay || 'Hazard Area'}</strong>
-              <div>Risk: {(zone.level || zone.flood_risk || 'unknown').replace('_', ' ')}</div>
-              <div>Type: {zone.disaster_type || 'General hazard'}</div>
-            </Popup>
-          </Circle>
-        ))}
+        <HazardHeatLayer hazardZones={hazardZones} />
 
         <ClusteredCenters
           centers={centers}
@@ -439,13 +456,21 @@ export default function Map() {
         )}
       </MapContainer>
 
-      <MapHud
-        selectedCenter={selectedCenter}
-        centerCount={centers.filter((center) => center.status === 'open').length}
-        hazardCount={hazardZones.length}
-        userLocationLabel={userLocation.label || DEFAULT_LOCATION.label}
-        selectedCenterDistance={selectedCenterDistance}
-      />
+      {!isMobile ? (
+        <MapHud />
+      ) : (
+        <div style={styles.mobileLegendWrap}>
+          <div style={styles.mobileLegend}>
+            <div style={styles.legendTitle}>Hazard Levels</div>
+            {Object.entries(hazardColors).map(([key, color]) => (
+              <div key={key} style={styles.legendItem}>
+                <span style={{ ...styles.legendDot, background: color }} />
+                <span>{key.replace('_', ' ')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -479,33 +504,6 @@ const styles = {
     color: '#0f172a',
     fontWeight: 700
   },
-  topHud: {
-    position: 'absolute',
-    top: 10,
-    left: 58,
-    right: 16,
-    display: 'flex',
-    gap: 12,
-    zIndex: 500,
-    flexWrap: 'wrap'
-  },
-  hudCard: {
-    minWidth: 140,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    padding: '12px 14px',
-    borderRadius: 18,
-    background: 'rgba(255,255,255,0.94)',
-    boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)'
-  },
-  hudLabel: {
-    color: '#64748b',
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.04em',
-    textTransform: 'uppercase'
-  },
   legend: {
     position: 'absolute',
     left: 16,
@@ -536,23 +534,14 @@ const styles = {
     height: 10,
     borderRadius: '50%'
   },
-  bottomHud: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-    zIndex: 500,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    minWidth: 220,
-    padding: '14px 16px',
-    borderRadius: 18,
-    background: 'rgba(15, 23, 42, 0.92)',
-    color: '#ffffff',
-    boxShadow: '0 18px 36px rgba(15, 23, 42, 0.18)'
+  mobileLegendWrap: {
+    marginTop: 10
   },
-  bottomHudText: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 12
+  mobileLegend: {
+    padding: '14px 16px',
+    borderRadius: 16,
+    background: 'rgba(255,255,255,0.96)',
+    border: '1px solid #dbe4f0',
+    boxShadow: '0 10px 20px rgba(15, 23, 42, 0.08)'
   },
 }

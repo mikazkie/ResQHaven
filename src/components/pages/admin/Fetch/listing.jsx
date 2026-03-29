@@ -862,24 +862,26 @@ function Listing() {
                   </span>
                 )
               }
-            />
-            <TableControls
-              showing={requestRows.length}
-              total={requestCandidates.length}
-              canShowLess={canShowLessRequest}
-              canShowMore={canShowMoreRequest}
-              showAllRows={showAllRows}
-              onShowLess={() => {
-                if (showAllRows) {
-                  setShowAllRows(false);
-                  setVisibleRows(Math.max(normalizedRowStep, requestCandidates.length - normalizedRowStep));
-                  return;
-                }
+              footer={
+                <TableControls
+                  showing={requestRows.length}
+                  total={requestCandidates.length}
+                  canShowLess={canShowLessRequest}
+                  canShowMore={canShowMoreRequest}
+                  showAllRows={showAllRows}
+                  onShowLess={() => {
+                    if (showAllRows) {
+                      setShowAllRows(false);
+                      setVisibleRows(Math.max(normalizedRowStep, requestCandidates.length - normalizedRowStep));
+                      return;
+                    }
 
-                setVisibleRows((prev) => Math.max(normalizedRowStep, prev - normalizedRowStep));
-              }}
-              onShowMore={() => setVisibleRows((prev) => prev + normalizedRowStep)}
-              onShowAll={() => setShowAllRows(true)}
+                    setVisibleRows((prev) => Math.max(normalizedRowStep, prev - normalizedRowStep));
+                  }}
+                  onShowMore={() => setVisibleRows((prev) => prev + normalizedRowStep)}
+                  onShowAll={() => setShowAllRows(true)}
+                />
+              }
             />
           </div>
 
@@ -919,26 +921,104 @@ function Listing() {
                   </span>
                 )
               }
-            />
-            <TableControls
-              showing={distributeRows.length}
-              total={distributeCandidates.length}
-              canShowLess={canShowLessDistribute}
-              canShowMore={canShowMoreDistribute}
-              showAllRows={showAllRows}
-              onShowLess={() => {
-                if (showAllRows) {
-                  setShowAllRows(false);
-                  setVisibleRows(Math.max(normalizedRowStep, distributeCandidates.length - normalizedRowStep));
-                  return;
-                }
+              footer={
+                <TableControls
+                  showing={distributeRows.length}
+                  total={distributeCandidates.length}
+                  canShowLess={canShowLessDistribute}
+                  canShowMore={canShowMoreDistribute}
+                  showAllRows={showAllRows}
+                  onShowLess={() => {
+                    if (showAllRows) {
+                      setShowAllRows(false);
+                      setVisibleRows(Math.max(normalizedRowStep, distributeCandidates.length - normalizedRowStep));
+                      return;
+                    }
 
-                setVisibleRows((prev) => Math.max(normalizedRowStep, prev - normalizedRowStep));
-              }}
-              onShowMore={() => setVisibleRows((prev) => prev + normalizedRowStep)}
-              onShowAll={() => setShowAllRows(true)}
+                    setVisibleRows((prev) => Math.max(normalizedRowStep, prev - normalizedRowStep));
+                  }}
+                  onShowMore={() => setVisibleRows((prev) => prev + normalizedRowStep)}
+                  onShowAll={() => setShowAllRows(true)}
+                />
+              }
             />
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-4 shadow-sm mb-4">
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div>
+            <h6 className="fw-bold mb-1">
+              All Evacuees
+              <span className="badge bg-danger ms-2">{filtered.length}</span>
+            </h6>
+            <p className="text-muted mb-0" style={{ fontSize: 12 }}>
+              Click a row to view the full evacuee profile for this center.
+            </p>
+          </div>
+        </div>
+
+        <div className="table-responsive">
+          <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Barangay</th>
+                <th>Primary Status</th>
+                <th>Inside Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length > 0 ? (
+                filtered.map((evacuee, index) => (
+                  <tr
+                    key={evacuee.checkin_id || evacuee.id || index}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => navigate(`user/${evacuee.id}`)}
+                  >
+                    <td className="text-muted">{index + 1}</td>
+                    <td>
+                      <div className="fw-medium">
+                        {evacuee.firstName} {evacuee.lastName}
+                      </div>
+                      <div className="text-muted" style={{ fontSize: 11 }}>
+                        {evacuee.sex || "Unknown"}
+                      </div>
+                    </td>
+                    <td>{evacuee.email || "Not available"}</td>
+                    <td>{evacuee.barangay || "Not available"}</td>
+                    <td>
+                      <span className="badge bg-info-subtle text-info-emphasis">
+                        {evacuee.primary_status || "Unknown"}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          evacuee.checkout_at
+                            ? "bg-secondary-subtle text-secondary-emphasis"
+                            : "bg-success-subtle text-success-emphasis"
+                        }`}
+                      >
+                        {evacuee.checkout_at ? "Checked Out" : "Inside"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="text-center text-muted py-4">
+                    {search
+                      ? "No evacuees match the current search."
+                      : "No evacuees are currently listed for this center."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -1049,7 +1129,8 @@ function CompactActionTable({
   onActionClick,
   onNeedsClick,
   headerAction,
-  actionDisabled = false
+  actionDisabled = false,
+  footer = null
 }) {
   return (
     <div className="border rounded-4 p-3 h-100">
@@ -1147,6 +1228,8 @@ function CompactActionTable({
           </tbody>
         </table>
       </div>
+
+      {footer ? <div className="pt-3">{footer}</div> : null}
     </div>
   );
 }
@@ -1162,12 +1245,15 @@ function TableControls({
   onShowAll
 }) {
   return (
-    <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+    <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
       <div className="text-muted" style={{ fontSize: 12 }}>
         Showing {showing} of {total} rows
       </div>
 
-      <div className="d-flex flex-wrap gap-2">
+      <div
+        className="d-grid d-sm-flex gap-2 w-100 w-md-auto"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))" }}
+      >
         <button
           type="button"
           className="btn btn-outline-secondary btn-sm rounded-pill px-3"
