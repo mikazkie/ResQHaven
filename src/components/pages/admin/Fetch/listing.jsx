@@ -70,38 +70,51 @@ function Listing() {
     try {
       setLoading(true);
 
-      const [response, requestsResponse] = await Promise.all([
+      const [response, requestsResult] = await Promise.allSettled([
         getRequest(`api/evac-list/${id}`),
         getRequest(`api/distribution-requests?centerId=${id}&status=all`)
       ]);
-      const data = response.data || [];
+
+      if (response.status !== "fulfilled") {
+        throw response.reason;
+      }
+
+      const listingResponse = response.value;
+      const requestsResponse =
+        requestsResult.status === "fulfilled" ? requestsResult.value : null;
+
+      const data = listingResponse.data || [];
       const currentCenter = response.center?.[0] || null;
       const totalCheckOuts = data.filter((user) => Boolean(user.checkout_at)).length;
       const totalCheckIns = data.length;
 
       setList(data);
       setDistributionRequests(requestsResponse?.requests || []);
-      setCenter(currentCenter);
-      setHeldSupplies(response.heldSupplies || []);
-      setHeldSupplyLogs(response.heldSupplyLogs || []);
+      setCenter(listingResponse.center?.[0] || null);
+      setHeldSupplies(listingResponse.heldSupplies || []);
+      setHeldSupplyLogs(listingResponse.heldSupplyLogs || []);
 
       setStats({
-        totalFamilies: response.familyCount?.[0]?.familyCount || 0,
+        totalFamilies: listingResponse.familyCount?.[0]?.familyCount || 0,
         totalPeople: data.reduce((sum, user) => sum + Number(user.number_of_people || 1), 0),
-        totalIndividual: response.individualCount?.[0]?.individualCount || 0,
+        totalIndividual: listingResponse.individualCount?.[0]?.individualCount || 0,
         totalCheckIns,
         totalCheckOuts,
         activeInside: totalCheckIns - totalCheckOuts,
-        foodNeeds: response.needs?.foodCount || 0,
-        medicineNeeds: response.needs?.medCount || 0,
-        allergyCount: response.needs?.allergy || 0,
-        specialFoodCount: response.needs?.specialCount || 0,
+        foodNeeds: listingResponse.needs?.foodCount || 0,
+        medicineNeeds: listingResponse.needs?.medCount || 0,
+        allergyCount: listingResponse.needs?.allergy || 0,
+        specialFoodCount: listingResponse.needs?.specialCount || 0,
         maleCount: data.filter((user) => user.sex === "male").length,
         femaleCount: data.filter((user) => user.sex === "female").length
       });
 
-      setSecondaryStatusData(response.secondaryStatus || []);
-      setPrimaryStatusData(response.primaryStatus || []);
+      setSecondaryStatusData(listingResponse.secondaryStatus || []);
+      setPrimaryStatusData(listingResponse.primaryStatus || []);
+
+      if (requestsResult.status === "rejected") {
+        console.log("Distribution requests failed to load:", requestsResult.reason);
+      }
     } catch (error) {
       console.log(error);
     } finally {
