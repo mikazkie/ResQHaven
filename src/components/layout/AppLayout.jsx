@@ -52,7 +52,7 @@ function LayoutContent() {
           }
 
           .main-area main {
-            padding: 14px 14px calc(110px + env(safe-area-inset-bottom, 0px)) !important;
+            padding: 0 0 calc(110px + env(safe-area-inset-bottom, 0px)) !important;
           }
         }
       `}</style>

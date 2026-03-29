@@ -58,6 +58,8 @@ function Listing() {
   const [needsLoading, setNeedsLoading] = useState(false);
   const [needsSummaryModal, setNeedsSummaryModal] = useState(null);
   const [needsSummaryLoading, setNeedsSummaryLoading] = useState(false);
+  const [heldSuppliesModalOpen, setHeldSuppliesModalOpen] = useState(false);
+  const [heldSupplyLogsModalOpen, setHeldSupplyLogsModalOpen] = useState(false);
   const [rowStep, setRowStep] = useState(10);
   const [visibleRows, setVisibleRows] = useState(10);
   const [showAllRows, setShowAllRows] = useState(false);
@@ -806,12 +808,54 @@ function Listing() {
         </div>
       </div>
 
-      <div className="row g-4 mb-4">
-        <div className="col-xl-6">
-          <BarangaySupplyTable rows={heldSupplies} />
+      <div className="bg-white p-4 rounded-4 shadow-sm mb-4">
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div>
+            <h6 className="fw-bold mb-1">Barangay Supply Records</h6>
+            <p className="text-muted mb-0" style={{ fontSize: 12 }}>
+              Open the inventory and movement history only when needed to keep this page cleaner.
+            </p>
+          </div>
+
+          <div className="d-flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+              onClick={() => setHeldSuppliesModalOpen(true)}
+            >
+              View Held Supplies
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm rounded-pill px-3"
+              onClick={() => setHeldSupplyLogsModalOpen(true)}
+            >
+              View Supply Log
+            </button>
+          </div>
         </div>
-        <div className="col-xl-6">
-          <BarangaySupplyLog rows={heldSupplyLogs} />
+
+        <div className="row g-3 mt-1">
+          <div className="col-md-6 col-xl-3">
+            <MiniStat title="Held Supply Items" value={heldSupplies.length} color="#475569" />
+          </div>
+          <div className="col-md-6 col-xl-3">
+            <MiniStat
+              title="Held Quantity"
+              value={heldSupplies.reduce((sum, item) => sum + Number(item.quantity || 0), 0)}
+              color="#0f172a"
+            />
+          </div>
+          <div className="col-md-6 col-xl-3">
+            <MiniStat title="Supply Logs" value={heldSupplyLogs.length} color="#475569" />
+          </div>
+          <div className="col-md-6 col-xl-3">
+            <MiniStat
+              title="Latest Log"
+              value={heldSupplyLogs[0]?.type ? String(heldSupplyLogs[0].type).toUpperCase() : "None"}
+              color="#0f172a"
+            />
+          </div>
         </div>
       </div>
 
@@ -1156,6 +1200,14 @@ function Listing() {
         />
       ) : null}
 
+      {heldSuppliesModalOpen ? (
+        <HeldSuppliesModal rows={heldSupplies} onClose={() => setHeldSuppliesModalOpen(false)} />
+      ) : null}
+
+      {heldSupplyLogsModalOpen ? (
+        <HeldSupplyLogsModal rows={heldSupplyLogs} onClose={() => setHeldSupplyLogsModalOpen(false)} />
+      ) : null}
+
       {feedbackModal ? (
         <FeedbackModal
           tone={feedbackModal.tone}
@@ -1472,7 +1524,7 @@ function MiniStat({ title, value, color, clickable = false, onClick }) {
 
 function BarangaySupplyTable({ rows }) {
   return (
-    <div className="bg-white rounded-4 shadow-sm p-4 h-100">
+    <div className="bg-white rounded-4 h-100">
       <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h6 className="fw-bold mb-1">Barangay Held Supplies</h6>
@@ -1523,7 +1575,7 @@ function BarangaySupplyTable({ rows }) {
 
 function BarangaySupplyLog({ rows }) {
   return (
-    <div className="bg-white rounded-4 shadow-sm p-4 h-100">
+    <div className="bg-white rounded-4 h-100">
       <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
         <div>
           <h6 className="fw-bold mb-1">Barangay Supply Log</h6>
@@ -1588,6 +1640,50 @@ function BarangaySupplyLog({ rows }) {
         </div>
       )}
     </div>
+  );
+}
+
+function HeldSuppliesModal({ rows, onClose }) {
+  return (
+    <BaseModal onClose={onClose} width={880}>
+      <div style={{ maxHeight: "82vh", overflowY: "auto" }}>
+        <div className="d-flex justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <h5 className="fw-bold mb-1">Barangay Held Supplies</h5>
+            <p className="text-muted mb-0" style={{ fontSize: 13 }}>
+              Current supplies allocated to this evacuation center.
+            </p>
+          </div>
+          <button type="button" className="btn btn-outline-secondary btn-sm rounded-pill px-3" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <BarangaySupplyTable rows={rows} />
+      </div>
+    </BaseModal>
+  );
+}
+
+function HeldSupplyLogsModal({ rows, onClose }) {
+  return (
+    <BaseModal onClose={onClose} width={980}>
+      <div style={{ maxHeight: "82vh", overflowY: "auto" }}>
+        <div className="d-flex justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <h5 className="fw-bold mb-1">Barangay Supply Log</h5>
+            <p className="text-muted mb-0" style={{ fontSize: 13 }}>
+              Review inventory movements without keeping the log open on the main page.
+            </p>
+          </div>
+          <button type="button" className="btn btn-outline-secondary btn-sm rounded-pill px-3" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <BarangaySupplyLog rows={rows} />
+      </div>
+    </BaseModal>
   );
 }
 
@@ -1778,7 +1874,7 @@ function DistributionModal({
                     <div key={need.id} className="border rounded-4 p-3 bg-light-subtle">
                       <div className="fw-semibold">{need.name || need.type}</div>
                       <div className="text-muted" style={{ fontSize: 12 }}>
-                        {need.type} • Qty {need.quantity}
+                        {need.type} | Qty {need.quantity}
                       </div>
                     </div>
                   ))}

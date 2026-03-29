@@ -1,21 +1,71 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "../../authentication/AuthContext";
-import { postRequest } from "../../API/API";
+import { getRequest, postRequest } from "../../API/API";
+
+const formatRelativeTime = (value) => {
+  if (!value) {
+    return "Just now";
+  }
+
+  const date = new Date(value);
+  const diffMs = Date.now() - date.getTime();
+
+  if (!Number.isFinite(diffMs) || diffMs < 0) {
+    return "Just now";
+  }
+
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+};
+
+const getAlertTone = (type = "", level = "") => {
+  const text = `${type} ${level}`.toLowerCase();
+
+  if (text.includes("typhoon") || text.includes("flood") || text.includes("very high")) {
+    return "danger";
+  }
+
+  if (text.includes("storm") || text.includes("high") || text.includes("moderate")) {
+    return "warning";
+  }
+
+  return "primary";
+};
+
+const getRequestTone = (status = "") => {
+  if (status === "approved") return "success";
+  if (status === "rejected") return "danger";
+  return "warning";
+};
 
 export default function AppHeader() {
   const [showAppMenu, setShowAppMenu] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [alertNotifications, setAlertNotifications] = useState([]);
+  const [requestNotifications, setRequestNotifications] = useState([]);
+  const [lastSeenAt, setLastSeenAt] = useState(() => {
+    const savedValue = localStorage.getItem("adminNotificationSeenAt");
+    return savedValue ? Number(savedValue) || 0 : 0;
+  });
 
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
-  const searchRef = useRef(null);
   const displayName = user?.firstName || user?.email || "Admin";
   const roleLabel = user?.role ? user.role.replace(/_/g, " ").toUpperCase() : "ADMIN";
   const profileInitial = displayName.charAt(0).toUpperCase() || "A";
+  const canSeeRequestNotifications = ["super_admin", "dswd", "barangay_official"].includes(user?.role);
 
   const handleToggle = () => {
     if (window.innerWidth >= 992) {
@@ -26,15 +76,57 @@ export default function AppHeader() {
   };
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        searchRef.current?.focus();
+    let mounted = true;
+
+    const loadNotifications = async () => {
+      try {
+        setNotificationsLoading(true);
+
+        const requests = [getRequest("api/alerts")];
+        if (canSeeRequestNotifications) {
+          requests.push(getRequest("api/distribution-requests?status=all"));
+        }
+
+        const results = await Promise.allSettled(requests);
+
+        if (!mounted) {
+          return;
+        }
+
+        const alertsResult = results[0];
+        setAlertNotifications(
+          alertsResult?.status === "fulfilled" ? alertsResult.value?.data || [] : []
+        );
+
+        if (canSeeRequestNotifications) {
+          const requestsResult = results[1];
+          setRequestNotifications(
+            requestsResult?.status === "fulfilled" ? requestsResult.value?.requests || [] : []
+          );
+        } else {
+          setRequestNotifications([]);
+        }
+      } catch (error) {
+        console.log(error);
+        if (mounted) {
+          setAlertNotifications([]);
+          setRequestNotifications([]);
+        }
+      } finally {
+        if (mounted) {
+          setNotificationsLoading(false);
+        }
       }
     };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+
+    if (user) {
+      loadNotifications();
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [canSeeRequestNotifications, user]);
 
   const handleLogout = async () => {
     try {
@@ -50,106 +142,105 @@ export default function AppHeader() {
     }
   };
 
-  const notifications = [
-    { id: 1, icon: "🌀", title: "Typhoon Warning", msg: "Signal No. 2 in Cebu", time: "2m ago", color: "danger" },
-    { id: 2, icon: "🌊", title: "Flood Alert", msg: "Mambaling — High Risk", time: "10m ago", color: "warning" },
-    { id: 3, icon: "✅", title: "Center Update", msg: "Mambaling Gym now open", time: "1h ago", color: "success" },
-  ];
+  const notifications = useMemo(() => {
+    const disasterItems = alertNotifications.slice(0, 4).map((alert) => ({
+      id: `alert-${alert.id}`,
+      icon: "bi bi-exclamation-triangle",
+      title: alert.disaster_type || "Disaster Alert",
+      msg:
+        [alert.affected_areas, alert.alert_level].filter(Boolean).join(" | ") ||
+        "Active disaster alert",
+      time: formatRelativeTime(alert.detected_at || alert.created_at),
+      color: getAlertTone(alert.disaster_type, alert.alert_level),
+      sortValue: new Date(alert.detected_at || alert.created_at || 0).getTime(),
+      onClick: () => {
+        setShowNotifs(false);
+        navigate("/simulation");
+      }
+    }));
+
+    const requestItems = requestNotifications.slice(0, 4).map((request) => ({
+      id: `request-${request.id}`,
+      icon: "bi bi-box-seam",
+      title: `Request #${request.id}`,
+      msg: `${request.request_type === "batch" ? "Batch" : "Individual"} request is ${request.status}`,
+      time: formatRelativeTime(request.reviewed_at || request.created_at),
+      color: getRequestTone(request.status),
+      sortValue: new Date(request.reviewed_at || request.created_at || 0).getTime(),
+      onClick: () => {
+        setShowNotifs(false);
+        navigate("/distribution-requests");
+      }
+    }));
+
+    return [...disasterItems, ...requestItems]
+      .sort((a, b) => b.sortValue - a.sortValue)
+      .slice(0, 8);
+  }, [alertNotifications, navigate, requestNotifications]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((item) => item.sortValue > lastSeenAt).length,
+    [lastSeenAt, notifications]
+  );
+
+  const markNotificationsAsSeen = () => {
+    const seenAt = Date.now();
+    localStorage.setItem("adminNotificationSeenAt", String(seenAt));
+    setLastSeenAt(seenAt);
+  };
 
   return (
     <>
-      <header className="d-flex align-items-center px-3 border-bottom bg-white shadow-sm sticky-top gap-2"
-        style={{ height: "64px", zIndex: 1030 }}>
-
-        {/* Toggle Button */}
+      <header
+        className="d-flex align-items-center px-3 border-bottom bg-white shadow-sm sticky-top gap-2"
+        style={{ height: "64px", zIndex: 1030 }}
+      >
         <button
           className="btn btn-outline-secondary d-flex align-items-center justify-content-center"
           style={{ width: 38, height: 38 }}
           onClick={handleToggle}
         >
-          {isMobileOpen ? "✕" : "☰"}
+          <i className={`bi ${isMobileOpen ? "bi-x-lg" : "bi-list"}`}></i>
         </button>
 
-        {/* Mobile Logo */}
-        <Link
-          to="/"
-          className="d-lg-none text-decoration-none d-flex align-items-center gap-2"
-        >
-          <div
-            className="d-flex align-items-center justify-content-center text-white rounded"
-            style={{ width: 32, height: 32, background: "#0d6efd" }}
-          >
-            🛡️
-          </div>
-
-          <span className="fw-bold text-dark" style={{ fontSize: "0.95rem" }}>
-            RiskReady
-          </span>
-        </Link>
-
-        {/* Search */}
-        <div className="position-relative d-none d-lg-block">
-          <span
-            className="position-absolute text-secondary"
-            style={{ left: 10, top: "50%", transform: "translateY(-50%)" }}
-          >
-            🔍
-          </span>
-
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder="Search or type command..."
-            className="form-control"
-            style={{ paddingLeft: 34, paddingRight: 60, width: 320, height: 38 }}
-          />
-
-          <span
-            className="position-absolute border rounded px-1 small text-secondary bg-light"
-            style={{ right: 8, top: "50%", transform: "translateY(-50%)" }}
-          >
-            ⌘ K
-          </span>
-        </div>
-
-        {/* Mobile menu toggle */}
         <button
           className="btn btn-outline-secondary d-lg-none ms-auto"
           style={{ width: 38, height: 38 }}
-          onClick={() => setShowAppMenu(!showAppMenu)}
+          onClick={() => setShowAppMenu((current) => !current)}
         >
-          ···
+          <i className="bi bi-three-dots"></i>
         </button>
 
-        {/* Right Side */}
         <div
           className={`align-items-center gap-2 ms-auto ${
             showAppMenu ? "d-flex" : "d-none d-lg-flex"
           }`}
         >
-
-          {/* Notifications */}
           <div className="position-relative">
-
             <button
               className="btn btn-outline-secondary position-relative"
               style={{ width: 38, height: 38 }}
               onClick={() => {
-                setShowNotifs(!showNotifs);
+                setShowNotifs((current) => {
+                  const nextValue = !current;
+                  if (nextValue) {
+                    markNotificationsAsSeen();
+                  }
+                  return nextValue;
+                });
                 setShowProfile(false);
               }}
             >
-              🔔
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                3
-              </span>
+              <i className="bi bi-bell"></i>
+              {unreadCount ? (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              ) : null}
             </button>
 
             {showNotifs && (
-              <div
-                className="dropdown-menu show p-0 shadow"
-                style={{ minWidth: 300, right: 0 }}
-              >
+              <div className="dropdown-menu show p-0 shadow" style={{ minWidth: 320, right: 0 }}>
                 <div className="px-3 py-2 border-bottom d-flex justify-content-between small fw-bold text-uppercase text-muted">
                   Notifications
                   <span
@@ -157,45 +248,61 @@ export default function AppHeader() {
                     style={{ cursor: "pointer", textTransform: "none" }}
                     onClick={() => setShowNotifs(false)}
                   >
-                    Mark all read
+                    Close
                   </span>
                 </div>
 
-                {notifications.map((n) => (
-                  <div key={n.id} className="d-flex gap-2 px-3 py-2 border-bottom">
-                    <div
-                      className={`bg-${n.color} bg-opacity-10 rounded d-flex align-items-center justify-content-center`}
-                      style={{ width: 34, height: 34 }}
-                    >
-                      {n.icon}
-                    </div>
-
-                    <div>
-                      <div className="fw-semibold small">{n.title}</div>
-                      <div className="text-muted small">{n.msg}</div>
-                      <div className="text-secondary" style={{ fontSize: 11 }}>
-                        {n.time}
-                      </div>
-                    </div>
+                {notificationsLoading ? (
+                  <div className="px-3 py-4 text-center text-muted small">
+                    Loading notifications...
                   </div>
-                ))}
+                ) : notifications.length ? (
+                  notifications.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="d-flex gap-2 px-3 py-2 border-bottom bg-white border-0 w-100 text-start"
+                      onClick={() => {
+                        markNotificationsAsSeen();
+                        item.onClick();
+                      }}
+                    >
+                      <div
+                        className={`bg-${item.color} bg-opacity-10 rounded d-flex align-items-center justify-content-center flex-shrink-0`}
+                        style={{ width: 34, height: 34 }}
+                      >
+                        <i className={`${item.icon} text-${item.color}`}></i>
+                      </div>
+
+                      <div>
+                        <div className="fw-semibold small">{item.title}</div>
+                        <div className="text-muted small">{item.msg}</div>
+                        <div className="text-secondary" style={{ fontSize: 11 }}>
+                          {item.time}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-4 text-center text-muted small">
+                    No new disaster or request notifications.
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Profile */}
           <div className="position-relative">
-
             <div
               className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
               style={{
                 width: 38,
                 height: 38,
                 background: "linear-gradient(135deg,#0d6efd,#6ea8fe)",
-                cursor: "pointer",
+                cursor: "pointer"
               }}
               onClick={() => {
-                setShowProfile(!showProfile);
+                setShowProfile((current) => !current);
                 setShowNotifs(false);
               }}
             >
@@ -203,10 +310,7 @@ export default function AppHeader() {
             </div>
 
             {showProfile && (
-              <div
-                className="dropdown-menu show shadow"
-                style={{ minWidth: 200, right: 0 }}
-              >
+              <div className="dropdown-menu show shadow" style={{ minWidth: 220, right: 0 }}>
                 <div className="px-3 py-3 border-bottom d-flex gap-2">
                   <div
                     className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
@@ -223,29 +327,21 @@ export default function AppHeader() {
                   </div>
                 </div>
 
-                <Link
-                  to="/profile"
-                  className="dropdown-item"
-                  onClick={() => setShowProfile(false)}
-                >
-                  👤 My Profile
+                <Link to="/profile" className="dropdown-item" onClick={() => setShowProfile(false)}>
+                  <i className="bi bi-person me-2"></i>
+                  My Profile
                 </Link>
 
-                <Link
-                  to="/settings"
-                  className="dropdown-item"
-                  onClick={() => setShowProfile(false)}
-                >
-                  ⚙️ Settings
+                <Link to="/settings" className="dropdown-item" onClick={() => setShowProfile(false)}>
+                  <i className="bi bi-gear me-2"></i>
+                  Settings
                 </Link>
 
                 <div className="dropdown-divider"></div>
 
-                <button
-                  className="dropdown-item text-danger"
-                  onClick={handleLogout}
-                >
-                  🚪 Sign Out
+                <button className="dropdown-item text-danger" onClick={handleLogout}>
+                  <i className="bi bi-box-arrow-right me-2"></i>
+                  Sign Out
                 </button>
               </div>
             )}
