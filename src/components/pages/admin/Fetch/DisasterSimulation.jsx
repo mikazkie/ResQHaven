@@ -224,7 +224,8 @@ export default function DisasterSimulation() {
           scenario: scenario.label,
           severity: scenario.severity,
           alertId: response.alertId,
-          message: response.message
+          message: response.message,
+          notifications: response.notifications
         })
 
 
@@ -279,8 +280,9 @@ export default function DisasterSimulation() {
         >
           Simulate disaster alerts for
           hackathon showcase purposes only.
-          All simulations are clearly marked
-          and do not send real alerts.
+          All simulations are clearly marked.
+          The result panel shows whether
+          email sending succeeded.
         </p>
       </div>
 
@@ -305,6 +307,24 @@ export default function DisasterSimulation() {
             <div style={{ fontSize: 13 }}>
               Alert ID: #{result.alertId}
             </div>
+            {result.notifications && (
+              <>
+                <div style={{ fontSize: 13 }}>
+                  Emails sent:{' '}
+                  <strong>{result.notifications.emailCount || 0}</strong>
+                  {typeof result.notifications.attemptedEmails === 'number' && (
+                    <> / {result.notifications.attemptedEmails} attempted</>
+                  )}
+                </div>
+                {result.notifications.warning && (
+                  <div className='mt-2 text-warning-emphasis'
+                    style={{ fontSize: 13 }}
+                  >
+                    {result.notifications.warning}
+                  </div>
+                )}
+              </>
+            )}
             <div className='mt-2'>
               <button
                 className='btn btn-sm
@@ -463,8 +483,10 @@ export default function DisasterSimulation() {
       >
         ⚠️ <strong>DISCLAIMER:</strong> All
         simulations are for demonstration
-        purposes only. No real SMS or email
-        alerts are sent during simulation.
+        purposes only. Email delivery
+        depends on your server mail
+        configuration and is reported
+        after each run.
       </div>
 
     </div>

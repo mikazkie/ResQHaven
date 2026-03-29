@@ -1,331 +1,499 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from "recharts";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
-function Inventory() {
-  const [food, setFood] = useState(120);
-  const [water, setWater] = useState(200);
+import { getRequest, postRequest, putRequest } from "../../../../API/API";
 
+export default function Inventory() {
+  const today = new Date();
+  const defaultRangeStart = new Date();
+  defaultRangeStart.setMonth(defaultRangeStart.getMonth() - 1);
+
+  const [inventory, setInventory] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [modal, setModal] = useState(null);
-  const [selectedLog, setSelectedLog] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [dateRange, setDateRange] = useState([defaultRangeStart, today]);
+  const [logTypeFilter, setLogTypeFilter] = useState("all");
+  const [categoryFilters, setCategoryFilters] = useState([]);
 
-  const [medicines, setMedicines] = useState([
-    { id: 1, name: "Paracetamol", purpose: "Fever", quantity: 50 },
-    { id: 2, name: "Amoxicillin", purpose: "Antibiotic", quantity: 30 }
-  ]);
+  const [formBasic, setFormBasic] = useState({
+    type: "", name: "", quantity: ""
+  });
 
-  const [specialNeeds, setSpecialNeeds] = useState([
-    { id: 1, name: "Baby Milk", quantity: 20 },
-    { id: 2, name: "Diapers", quantity: 100 }
-  ]);
+  const [startDate, endDate] = dateRange;
 
-  const [logs, setLogs] = useState([
-    {
-      id: 1,
-      type: "IN",
-      category: "Medicine",
-      name: "Paracetamol",
-      quantity: 50,
-      date: "2026-03-20",
-      destination: ""
-    },
-    {
-      id: 2,
-      type: "OUT",
-      category: "Basic Needs",
-      name: "Water",
-      quantity: 30,
-      date: "2026-03-21",
-      destination: "Center A"
+  useEffect(() => {
+    if (startDate && endDate) {
+      fetchInventory();
     }
-  ]);
+  }, [startDate, endDate]);
 
-  const [formBasic, setFormBasic] = useState({ food: "", water: "" });
+  const fetchInventory = async () => {
+    try {
+      const s = startDate.toISOString().split("T")[0];
+      const e = endDate.toISOString().split("T")[0];
+      const res = await getRequest(`/api/inventory?startDate=${s}&endDate=${e}`);
+      if (res.success) {
+        setInventory(res.inventory);
+        setLogs(res.logs);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
-  const [formMedicine, setFormMedicine] = useState({
-    name: "",
-    purpose: "",
-    quantity: ""
+  // 📊 COMPUTED
+  const food = inventory.filter(i => i.category === "food")
+    .reduce((sum, i) => sum + i.quantity, 0);
+
+  const water = inventory.filter(i => i.category === "water")
+    .reduce((sum, i) => sum + i.quantity, 0);
+
+  const medicine = inventory.filter(i => i.category === "medicine")
+    .reduce((sum, i) => sum + i.quantity, 0);
+
+  const special = inventory.filter(i => i.category === "special")
+    .reduce((sum, i) => sum + i.quantity, 0);
+
+  const total = food + water + medicine + special;
+
+  const filteredLogs = logs.filter((log) => {
+    const matchesType = logTypeFilter === "all" ? true : log.type === logTypeFilter;
+    const matchesCategory =
+      categoryFilters.length === 0 ? true : categoryFilters.includes(log.category);
+
+    return matchesType && matchesCategory;
   });
 
-  const [formSpecial, setFormSpecial] = useState({
-    name: "",
-    quantity: ""
+  const trendData = (() => {
+  let balance = 0;
+
+  const sortedLogs = [...filteredLogs].sort(
+    (a, b) => new Date(a.created_at) - new Date(b.created_at)
+  );
+
+  return sortedLogs.map(log => {
+    if (log.type === "in") {
+      balance += log.quantity;
+    } else {
+      balance -= log.quantity;
+    }
+
+    return {
+      date: new Date(log.created_at).toLocaleDateString(),
+      value: balance
+    };
   });
+})();
+
+  const chartData = [
+    { name: "Food", value: food },
+    { name: "Water", value: water },
+    { name: "Medicine", value: medicine },
+    { name: "Special", value: special }
+  ];
+
+  const COLORS = ["#3b82f6", "#06b6d4", "#10b981", "#f59e0b"];
+
+  const handleSubmitBasic = async () => {
+    try {
+      const payload = {
+        type: formBasic.type,
+        name: formBasic.name,
+        quantity: Number(formBasic.quantity)
+      };
+
+      const res = await postRequest("auth/inventory/add", payload);
+
+      if (res.success) {
+        await fetchInventory();
+        setFormBasic({ type: "", name: "", quantity: "" });
+        setModal(null);
+      }
+    } catch (err) {
+      alert("Failed to add");
+    }
+  };
+
+  const handleEdit = async () => {
+    try {
+      const payload = {
+        name: selectedItem.name,
+        quantity: Number(selectedItem.quantity),
+        category: selectedItem.category
+      };
+
+      const res = await putRequest(
+        `auth/inventory/update/${selectedItem.id}`,
+        payload
+      );
+
+      if (res.success) {
+        await fetchInventory();
+        setSelectedItem(null);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this item?")) return;
+
+    try {
+      const res = await postRequest(`auth/inventory/delete/${id}`);
+
+      if (res.success) {
+        await fetchInventory();
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  
 
   return (
-    <div className="container py-4">
+    <div style={{ background: "#f8fafc", padding: 20 }}>
 
       {/* HEADER */}
-      <div className="row mb-4">
-        <div className="col">
-          <h2 className="fw-bold text-dark">Inventory Management</h2>
-          <p className="text-muted mb-0">
-            Monitor supplies and track inventory movement
+      <div className="mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+        <div>
+          <h3 className="fw-bold mb-1">Inventory Dashboard</h3>
+          <p className="text-muted mb-0" style={{ fontSize: 13 }}>
+            Monitor and manage relief supplies
           </p>
         </div>
-      </div>
 
-      {/* SUMMARY CARDS */}
-      <div className="row mb-4 g-3">
-        <div className="col-md-3">
-          <div className="card shadow-sm border-0 text-center p-3">
-            <h6 className="text-muted">🍚 Food</h6>
-            <h4 className="fw-bold text-primary">{food}</h4>
-          </div>
-        </div>
-
-        <div className="col-md-3">
-          <div className="card shadow-sm border-0 text-center p-3">
-            <h6 className="text-muted">💧 Water</h6>
-            <h4 className="fw-bold text-primary">{water}</h4>
-          </div>
-        </div>
-
-        <div className="col-md-3">
-          <div className="card shadow-sm border-0 text-center p-3">
-            <h6 className="text-muted">💊 Medicines</h6>
-            <h4 className="fw-bold text-success">{medicines.length}</h4>
-          </div>
-        </div>
-
-        <div className="col-md-3">
-          <div className="card shadow-sm border-0 text-center p-3">
-            <h6 className="text-muted">🆘 Special Needs</h6>
-            <h4 className="fw-bold text-warning">{specialNeeds.length}</h4>
-          </div>
+        <div className="d-flex flex-wrap gap-2 align-items-center">
+          <span className="text-muted fw-medium" style={{ fontSize: 12 }}>
+            Inventory activity date range filter
+          </span>
+          <DatePicker
+            selectsRange
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => setDateRange(update)}
+            isClearable={false}
+            placeholderText="Select inventory range"
+            className="form-control rounded-pill shadow-sm px-3"
+          />
         </div>
       </div>
 
-      {/* TABLES */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          <h5 className="fw-bold mb-3">💊 Medicines</h5>
+      {/* STATS */}
+      <div className="row g-3 mb-4">
+        <StatCard title="Food" value={food} />
+        <StatCard title="Water" value={water} />
+        <StatCard title="Medicine" value={medicine} />
+        <StatCard title="Special" value={special} />
+      </div>
 
-          <table className="table table-hover">
-            <thead className="table-light">
-              <tr>
-                <th>Name</th>
-                <th>Purpose</th>
-                <th>Quantity</th>
+      {/* CHARTS */}
+      <div className="row g-4 mb-4">
+
+        {/*  TREND */}
+        <div className="col-md-8">
+          <div className="bg-white p-4 rounded-4 shadow-sm">
+            <h6 className="fw-semibold mb-3">
+              Inventory Trend
+              {" "}
+              {logTypeFilter === "all" ? "(IN vs OUT)" : `(${logTypeFilter.toUpperCase()} only)`}
+              {categoryFilters.length > 0
+                ? ` - ${categoryFilters
+                    .map((category) =>
+                      category === "special"
+                        ? "Special Food"
+                        : category.charAt(0).toUpperCase() + category.slice(1)
+                    )
+                    .join(", ")}`
+                : ""}
+            </h6>
+
+            <ResponsiveContainer width="100%" height={250}>
+  <LineChart data={trendData}>
+    <XAxis dataKey="date" />
+    <YAxis />
+    <Tooltip />
+
+
+    <Line
+  type="monotone"
+  dataKey="value"
+  stroke="#3b82f6"
+  strokeWidth={3}
+  dot={false}
+  activeDot={{ r: 6 }}
+/>
+  </LineChart>
+</ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* PIE */}
+        <div className="col-md-4">
+          <div className="bg-white p-4 rounded-4 shadow-sm text-center">
+            <h6 className="fw-semibold mb-2">Inventory Overview</h6>
+
+            <ResponsiveContainer width="100%" height={230}>
+              <PieChart>
+                <Pie data={chartData} dataKey="value" innerRadius={50}>
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i]} />
+                  ))}
+                </Pie>
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div className="mt-2 text-muted" style={{ fontSize: 12 }}>
+              Total Items: <strong>{total}</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* TABLE */}
+      <div className="bg-white p-4 rounded-4 shadow-sm mb-4">
+        <h6 className="fw-semibold mb-3">Inventory Items</h6>
+
+        <table className="table align-middle">
+          <thead>
+            <tr className="text-muted">
+              <th>Name</th>
+              <th>Category</th>
+              <th>Qty</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventory.map(i => (
+              <tr key={i.id}>
+                <td>{i.name}</td>
+                <td>{i.category}</td>
+                <td>{i.quantity}</td>
+                <td className="text-end">
+                  <button
+                    className="btn btn-sm btn-outline-primary me-2"
+                    onClick={() => setSelectedItem(i)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => handleDelete(i.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {medicines.map((m) => (
-                <tr key={m.id}>
-                  <td>{m.name}</td>
-                  <td>{m.purpose}</td>
-                  <td>{m.quantity}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 📜 LOGS */}
+      <div className="bg-white p-4 rounded-4 shadow-sm mb-4">
+        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <h6 className="fw-semibold mb-0">Recent Activity</h6>
+          <div className="d-flex flex-wrap gap-2 justify-content-end">
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${logTypeFilter === "all" ? "btn-dark" : "btn-outline-secondary"}`}
+              onClick={() => setLogTypeFilter("all")}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${logTypeFilter === "in" ? "btn-success" : "btn-outline-success"}`}
+              onClick={() => setLogTypeFilter("in")}
+            >
+              In
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${logTypeFilter === "out" ? "btn-danger" : "btn-outline-danger"}`}
+              onClick={() => setLogTypeFilter("out")}
+            >
+              Out
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${categoryFilters.length === 0 ? "btn-dark" : "btn-outline-secondary"}`}
+              onClick={() => setCategoryFilters([])}
+            >
+              All Categories
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${categoryFilters.includes("food") ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() =>
+                setCategoryFilters((prev) =>
+                  prev.includes("food")
+                    ? prev.filter((item) => item !== "food")
+                    : [...prev, "food"]
+                )
+              }
+            >
+              Food
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${categoryFilters.includes("water") ? "btn-info text-white" : "btn-outline-info"}`}
+              onClick={() =>
+                setCategoryFilters((prev) =>
+                  prev.includes("water")
+                    ? prev.filter((item) => item !== "water")
+                    : [...prev, "water"]
+                )
+              }
+            >
+              Water
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${categoryFilters.includes("medicine") ? "btn-success" : "btn-outline-success"}`}
+              onClick={() =>
+                setCategoryFilters((prev) =>
+                  prev.includes("medicine")
+                    ? prev.filter((item) => item !== "medicine")
+                    : [...prev, "medicine"]
+                )
+              }
+            >
+              Medicine
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm rounded-pill px-3 ${categoryFilters.includes("special") ? "btn-warning text-dark" : "btn-outline-warning"}`}
+              onClick={() =>
+                setCategoryFilters((prev) =>
+                  prev.includes("special")
+                    ? prev.filter((item) => item !== "special")
+                    : [...prev, "special"]
+                )
+              }
+            >
+              Special Food
+            </button>
+          </div>
+        </div>
+        <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: 4 }}>
+          {filteredLogs.length > 0 ? filteredLogs.map(l => (
+            <div key={l.id}
+              className="d-flex justify-content-between border-bottom py-2">
+
+              <div>
+                <span className="fw-medium">{l.name}</span>
+                <div className="text-muted" style={{ fontSize: 12 }}>
+                  {l.category}
+                </div>
+              </div>
+
+              <div className="text-end">
+                <div className={l.type === "in" ? "text-success fw-bold" : "text-danger fw-bold"}>
+                  {l.type === "in" ? "+" : "-"}{l.quantity}
+                </div>
+                <div style={{ fontSize: 12 }}>
+                  {new Date(l.created_at).toLocaleDateString()}
+                </div>
+              </div>
+
+            </div>
+          )) : (
+            <div className="text-muted text-center py-4">
+              No matching activity found for the selected filters and date range.
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          <h5 className="fw-bold mb-3">🆘 Special Needs</h5>
+      {/* ADD BUTTON */}
+      <button
+        className="btn btn-primary rounded-pill px-4"
+        onClick={() => setModal("basic")}
+      >
+        + Add Item
+      </button>
 
-          <table className="table table-hover">
-            <thead className="table-light">
-              <tr>
-                <th>Name</th>
-                <th>Quantity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {specialNeeds.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.name}</td>
-                  <td>{s.quantity}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* LOGS */}
-      <div className="card shadow-sm border-0">
-        <div className="card-body">
-          <h5 className="fw-bold mb-3">📦 Inventory Logs</h5>
-
-          <table className="table table-hover align-middle">
-            <thead className="table-light">
-              <tr>
-                <th>Status</th>
-                <th>Type</th>
-                <th>Name</th>
-                <th>Quantity</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {logs.map((log) => (
-                <tr
-                  key={log.id}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setSelectedLog(log)}
-                >
-                  <td>
-                    <span
-                      className={`badge ${
-                        log.type === "IN" ? "bg-success" : "bg-danger"
-                      }`}
-                    >
-                      {log.type}
-                    </span>
-                  </td>
-                  <td>{log.category}</td>
-                  <td>{log.name}</td>
-                  <td>{log.quantity}</td>
-                  <td>{log.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ACTION BUTTONS */}
-      <div className="d-flex gap-2 mt-3">
-        <button className="btn btn-primary" onClick={() => setModal("basic")}>
-          + Basic Needs
-        </button>
-        <button className="btn btn-success" onClick={() => setModal("medicine")}>
-          + Medicine
-        </button>
-        <button className="btn btn-warning" onClick={() => setModal("special")}>
-          + Special Needs
-        </button>
-      </div>
-
-      {/* ================= MODALS ================= */}
-
-      {selectedLog && (
-        <Modal onClose={() => setSelectedLog(null)} title="Log Details">
-          <p><strong>Type:</strong> {selectedLog.type}</p>
-          <p><strong>Category:</strong> {selectedLog.category}</p>
-          <p><strong>Name:</strong> {selectedLog.name}</p>
-          <p><strong>Quantity:</strong> {selectedLog.quantity}</p>
-          <p><strong>Date:</strong> {selectedLog.date}</p>
-        </Modal>
-      )}
-
+      {/* ADD MODAL */}
       {modal === "basic" && (
-        <Modal onClose={() => setModal(null)} title="Add Basic Needs">
-          <input
-            className="form-control mb-2"
-            type="number"
-            placeholder="Food"
-            value={formBasic.food}
+        <Modal title="Add Item" onClose={() => setModal(null)}>
+          <select className="form-control mb-2"
+            value={formBasic.type}
             onChange={(e) =>
-              setFormBasic({ ...formBasic, food: e.target.value })
-            }
-          />
-          <input
-            className="form-control mb-2"
-            type="number"
-            placeholder="Water"
-            value={formBasic.water}
+              setFormBasic({ ...formBasic, type: e.target.value })
+            }>
+            <option value="">Category</option>
+            <option value="food">Food</option>
+            <option value="water">Water</option>
+            <option value="medicine">Medicine</option>
+            <option value="special">Special</option>
+          </select>
+
+          <input className="form-control mb-2"
+            placeholder="Item Name"
+            value={formBasic.name}
             onChange={(e) =>
-              setFormBasic({ ...formBasic, water: e.target.value })
+              setFormBasic({ ...formBasic, name: e.target.value })
             }
           />
 
-          <button
-            className="btn btn-success w-100"
-            onClick={() => {
-              setFood(food + Number(formBasic.food || 0));
-              setWater(water + Number(formBasic.water || 0));
+          <input className="form-control mb-3"
+            type="number"
+            placeholder="Quantity"
+            value={formBasic.quantity}
+            onChange={(e) =>
+              setFormBasic({ ...formBasic, quantity: e.target.value })
+            }
+          />
 
-              setModal(null);
-              setFormBasic({ food: "", water: "" });
-            }}
-          >
-            Add
+          <button className="btn btn-primary w-100"
+            onClick={handleSubmitBasic}>
+            Add Item
           </button>
         </Modal>
       )}
 
-      {modal === "medicine" && (
-        <Modal onClose={() => setModal(null)} title="Add Medicine">
-          <input
-            className="form-control mb-2"
-            placeholder="Name"
-            value={formMedicine.name}
+      {/* EDIT MODAL */}
+      {selectedItem && (
+        <Modal title="Edit Item" onClose={() => setSelectedItem(null)}>
+          <select className="form-control mb-2"
+            value={selectedItem.category}
             onChange={(e) =>
-              setFormMedicine({ ...formMedicine, name: e.target.value })
+              setSelectedItem({ ...selectedItem, category: e.target.value })
+            }>
+            <option value="food">Food</option>
+            <option value="water">Water</option>
+            <option value="medicine">Medicine</option>
+            <option value="special">Special</option>
+          </select>
+
+          <input className="form-control mb-2"
+            value={selectedItem.name}
+            onChange={(e) =>
+              setSelectedItem({ ...selectedItem, name: e.target.value })
             }
           />
-          <input
-            className="form-control mb-2"
-            placeholder="Purpose"
-            value={formMedicine.purpose}
-            onChange={(e) =>
-              setFormMedicine({ ...formMedicine, purpose: e.target.value })
-            }
-          />
-          <input
-            className="form-control mb-2"
+
+          <input className="form-control mb-3"
             type="number"
-            placeholder="Quantity"
-            value={formMedicine.quantity}
+            value={selectedItem.quantity}
             onChange={(e) =>
-              setFormMedicine({ ...formMedicine, quantity: e.target.value })
+              setSelectedItem({ ...selectedItem, quantity: e.target.value })
             }
           />
 
-          <button
-            className="btn btn-primary w-100"
-            onClick={() => {
-              setMedicines([
-                ...medicines,
-                { id: Date.now(), ...formMedicine }
-              ]);
-
-              setModal(null);
-              setFormMedicine({ name: "", purpose: "", quantity: "" });
-            }}
-          >
-            Add
-          </button>
-        </Modal>
-      )}
-
-      {modal === "special" && (
-        <Modal onClose={() => setModal(null)} title="Add Special Needs">
-          <input
-            className="form-control mb-2"
-            placeholder="Name"
-            value={formSpecial.name}
-            onChange={(e) =>
-              setFormSpecial({ ...formSpecial, name: e.target.value })
-            }
-          />
-          <input
-            className="form-control mb-2"
-            type="number"
-            placeholder="Quantity"
-            value={formSpecial.quantity}
-            onChange={(e) =>
-              setFormSpecial({ ...formSpecial, quantity: e.target.value })
-            }
-          />
-
-          <button
-            className="btn btn-warning w-100"
-            onClick={() => {
-              setSpecialNeeds([
-                ...specialNeeds,
-                { id: Date.now(), ...formSpecial }
-              ]);
-
-              setModal(null);
-              setFormSpecial({ name: "", quantity: "" });
-            }}
-          >
-            Add
+          <button className="btn btn-success w-100"
+            onClick={handleEdit}>
+            Save Changes
           </button>
         </Modal>
       )}
@@ -333,60 +501,36 @@ function Inventory() {
   );
 }
 
-/* ================= MODAL (CENTERED + BLUR) ================= */
+/* COMPONENTS */
+
+function StatCard({ title, value }) {
+  return (
+    <div className="col-md-3">
+      <div className="bg-white p-3 rounded-4 shadow-sm">
+        <div className="text-muted" style={{ fontSize: 12 }}>{title}</div>
+        <div className="fw-bold fs-4">{value}</div>
+      </div>
+    </div>
+  );
+}
+
 function Modal({ title, children, onClose }) {
   return (
-    <div
-      className="modal-overlay"
-      onClick={onClose}
-    >
-      <div
-        className="modal-box"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="modal-header">
-          <h5 className="fw-bold">{title}</h5>
-          <button className="btn-close" onClick={onClose}></button>
+    <div style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.4)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }}>
+      <div className="bg-white p-4 rounded-4" style={{ width: 400 }}>
+        <div className="d-flex justify-content-between mb-3">
+          <strong>{title}</strong>
+          <button onClick={onClose}>✕</button>
         </div>
-
-        <div className="modal-body">{children}</div>
+        {children}
       </div>
-
-      {/* INLINE STYLES FOR BLUR MODAL */}
-      <style>{`
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.35);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-        }
-
-        .modal-box {
-          width: 420px;
-          background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-          overflow: hidden;
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px;
-          border-bottom: 1px solid #eee;
-        }
-
-        .modal-body {
-          padding: 15px;
-        }
-      `}</style>
     </div>
   );
 }
-
-export default Inventory;

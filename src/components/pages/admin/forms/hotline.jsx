@@ -53,16 +53,20 @@ function Hotline() {
   }
 
   return (
-    <div className='container-fluid py-4'>
+    <div className='admin-form-page'>
+      <div className='admin-form-shell'>
 
       {/* Header */}
-      <div className='mb-4'>
-        <h4 className='fw-bold text-danger mb-0'>
+      <div className='admin-form-header'>
+        <div>
+        <div className='admin-form-kicker'>Emergency Contacts</div>
+        <h4 className='admin-form-title'>
           Emergency Hotline
         </h4>
-        <small className='text-muted'>
+        <p className='admin-form-subtitle'>
           Register emergency contact information
-        </small>
+        </p>
+        </div>
       </div>
 
       <div className='card border-0 shadow-sm'>
@@ -70,9 +74,7 @@ function Hotline() {
           <form onSubmit={handleSubmit}>
 
             {/* BASIC INFO */}
-            <h6 className='fw-bold text-danger mb-3'>
-              Hotline Information
-            </h6>
+            <div className='admin-form-section'>Hotline Information</div>
 
             <div className='row g-3'>
 
@@ -143,9 +145,7 @@ function Hotline() {
             <hr className='my-4' />
 
             {/* LOCATION */}
-            <h6 className='fw-bold text-danger mb-3'>
-              Location Details
-            </h6>
+            <div className='admin-form-section'>Location Details</div>
 
             <div className='row g-3'>
 
@@ -214,7 +214,7 @@ function Hotline() {
             <div className='d-flex justify-content-end gap-2'>
               <button
                 type='button'
-                className='btn btn-light px-4'
+                className='btn btn-outline-secondary px-4'
                 onClick={handleReset}
               >
                 Reset
@@ -222,7 +222,7 @@ function Hotline() {
 
               <button
                 type='submit'
-                className='btn btn-danger px-4'
+                className='btn btn-primary px-4'
               >
                 Save Hotline
               </button>
@@ -230,6 +230,7 @@ function Hotline() {
 
           </form>
         </div>
+      </div>
       </div>
     </div>
   )

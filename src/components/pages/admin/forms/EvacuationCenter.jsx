@@ -211,19 +211,19 @@ function EvacuationCenter() {
   }
 
   return (
-    <div className='container-fluid py-4'>
+    <div className='admin-form-page'>
+      <div className='admin-form-shell'>
 
       {/* Header */}
-      <div className='d-flex align-items-center
-        gap-2 mb-4'
-      >
+      <div className='admin-form-header'>
         <div>
-          <h4 className='mb-0 fw-bold'>
+          <div className='admin-form-kicker'>Facilities</div>
+          <h4 className='admin-form-title'>
             Evacuation Center
           </h4>
-          <small className='text-muted'>
+          <p className='admin-form-subtitle'>
             Add new evacuation center
-          </small>
+          </p>
         </div>
       </div>
 
@@ -233,9 +233,7 @@ function EvacuationCenter() {
 
             {/* Center Name */}
             <div className='mb-4'>
-              <h6 className='fw-bold text-danger mb-3'>
-                Center Information
-              </h6>
+              <div className='admin-form-section'>Center Information</div>
               <div className='mb-3'>
                 <label className='form-label fw-semibold'>
                   Center Name
@@ -258,9 +256,7 @@ function EvacuationCenter() {
 
             {/* Map */}
             <div className='mb-4'>
-              <h6 className='fw-bold text-danger mb-1'>
-                Pick Location on Map
-              </h6>
+              <div className='admin-form-section'>Pick Location on Map</div>
               <small className='text-muted d-block mb-3'>
                 Search a location OR
                 Click anywhere on the map
@@ -453,9 +449,7 @@ function EvacuationCenter() {
 
             {/* Capacity & Status */}
             <div className='mb-4'>
-              <h6 className='fw-bold text-danger mb-3'>
-                Capacity & Status
-              </h6>
+              <div className='admin-form-section'>Capacity and Status</div>
               <div className='row g-3'>
 
                 <div className='col-md-4'>
@@ -544,14 +538,14 @@ function EvacuationCenter() {
             >
               <button
                 type='button'
-                className='btn btn-light px-4'
+                className='btn btn-outline-secondary px-4'
                 onClick={handleReset}
               >
                 Reset
               </button>
               <button
                 type='submit'
-                className='btn btn-success px-4'
+                className='btn btn-primary px-4'
                 disabled={loadingAddress}
               >
                 Save Center
@@ -562,6 +556,7 @@ function EvacuationCenter() {
         </div>
       </div>
 
+      </div>
     </div>
   )
 }

@@ -1,18 +1,51 @@
 // src/pages/admin/Fetch/profile.jsx
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router'
+import { useParams, useNavigate, useLocation } from 'react-router'
 import { getRequest, putRequest } from '../../../../API/API'
+import { useAuth } from '../../../../authentication/AuthContext'
 
 import { QRCodeSVG } from 'qrcode.react'
 
 export default function Profile() {
-  const { id } = useParams()
+  const { id, centerId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user, loading: authLoading } = useAuth()
   const [evacuee, setEvacuee] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+
+    if (centerId) {
+      navigate(`/evacuation/evac-list/${centerId}`)
+      return
+    }
+
+    navigate('/track')
+  }
+
  
   useEffect(() => {
+    if (authLoading) {
+      return
+    }
+
+    const matchedCenterId = centerId
+      || location.pathname.match(/\/evacuation\/evac-list\/(\d+)\/user\/\d+$/)?.[1]
+
+    if (
+      user?.role === 'barangay_official' &&
+      matchedCenterId &&
+      Number(user.assigned_center_id) !== Number(matchedCenterId)
+    ) {
+      navigate('/evacuation', { replace: true })
+      return
+    }
+
     const fetchProfile = async () => {
       try {
         const response = await getRequest(
@@ -30,7 +63,7 @@ export default function Profile() {
       }
     }
     fetchProfile()
-  }, [id])
+  }, [authLoading, centerId, id, location.pathname, navigate, user?.assigned_center_id, user?.role])
 
   const fulladminName = evacuee?.adminFN + ' ' +  evacuee?.adminLN 
 const serveNeed = async (needId, type) => {
@@ -102,6 +135,13 @@ const serveNeed = async (needId, type) => {
 
   return (
     <div className='p-4'>
+      <button
+        type='button'
+        className='btn btn-outline-secondary btn-sm rounded-pill px-3 mb-3'
+        onClick={handleBack}
+      >
+        Back
+      </button>
 
       <div className='row g-3'>
 

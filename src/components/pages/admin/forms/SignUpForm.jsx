@@ -91,19 +91,23 @@ const handleChange = (e) => {
   };
 
   return (
-    <div className='container-fluid'
-    >
-      <div className=''>
-        <div className=''>
+    <div className='admin-form-page'>
+      <div className='admin-form-shell'>
+        <div>
 
          
 
           {/* Header */}
-          <div className='mb-4'>
-            <h4 className='fw-semibold mb-1'>
+          <div className='admin-form-header'>
+            <div>
+            <div className='admin-form-kicker'>Administration</div>
+            <h4 className='admin-form-title'>
               Create Account
             </h4>
-           
+            <p className='admin-form-subtitle'>
+              Register a new admin or barangay official account.
+            </p>
+            </div>
           </div>
 
           {/* Error Alert */}
@@ -112,7 +116,6 @@ const handleChange = (e) => {
               d-flex align-items-center
               gap-2 py-2'
             >
-              <span>❌</span>
               <span style={{ fontSize: 14 }}>
                 {error}
               </span>
@@ -125,7 +128,6 @@ const handleChange = (e) => {
               d-flex align-items-center
               gap-2 py-2'
             >
-              <span>✅</span>
               <span style={{ fontSize: 14 }}>
                 {success}
               </span>
@@ -230,7 +232,7 @@ const handleChange = (e) => {
                       setShowPassword(!showPassword)
                     }
                   >
-                    {showPassword ? '👁️' : '🙈'}
+                    {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
@@ -279,7 +281,7 @@ const handleChange = (e) => {
               {/* Button */}
               <button
                 type='submit'
-                className='btn btn-success w-100'
+                className='btn btn-primary w-100'
                 disabled={loading}
               >
                 {loading

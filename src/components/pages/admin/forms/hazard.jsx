@@ -210,19 +210,19 @@ function Hazard() {
   }
 
   return (
-    <div className='container-fluid py-4'>
+    <div className='admin-form-page'>
+      <div className='admin-form-shell'>
 
       {/* Header */}
-      <div className='d-flex align-items-center
-        gap-2 mb-4'
-      >
+      <div className='admin-form-header'>
         <div>
-          <h4 className='mb-0 fw-bold'>
+          <div className='admin-form-kicker'>Hazard Mapping</div>
+          <h4 className='admin-form-title'>
             Hazard Area
           </h4>
-          <small className='text-muted'>
+          <p className='admin-form-subtitle'>
             Add the prone area
-          </small>
+          </p>
         </div>
       </div>
 
@@ -231,9 +231,7 @@ function Hazard() {
           <form onSubmit={handleSubmit}>
             {/* Map */}
             <div className='mb-4'>
-              <h6 className='fw-bold text-danger mb-1'>
-                Pick Location on Map
-              </h6>
+              <div className='admin-form-section'>Pick Location on Map</div>
               <small className='text-muted d-block mb-3'>
                 Search a location OR
                 Click anywhere on the map
@@ -426,9 +424,7 @@ function Hazard() {
 
             {/* Capacity & Status */}
             <div className='mb-4'>
-              <h6 className='fw-bold text-danger mb-3'>
-                Disaster Level & Type
-              </h6>
+              <div className='admin-form-section'>Disaster Level and Type</div>
               <div className='row g-3'>
 
                 <div className='col-md-4'>
@@ -500,17 +496,17 @@ function Hazard() {
             >
               <button
                 type='button'
-                className='btn btn-light px-4'
+                className='btn btn-outline-secondary px-4'
                 onClick={handleReset}
               >
                 Reset
               </button>
               <button
                 type='submit'
-                className='btn btn-success px-4'
+                className='btn btn-primary px-4'
                 disabled={loadingAddress}
               >
-                Save Center
+                Save Hazard
               </button>
             </div>
 
@@ -518,6 +514,7 @@ function Hazard() {
         </div>
       </div>
 
+      </div>
     </div>
   )
 }

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import './App.css'
+import './components/styles/adminForms.css'
 import Home from '../src/components/pages/user/home'
 import SignUp from '../src/components/pages/user/SignUpForm'
 import Login from '../src/components/pages/user/SignInForm'
+import FamilyRegistration from './components/pages/user/FamilyRegistration'
 
 import EvacuationCenter from './components/pages/admin/forms/EvacuationCenter';
 import Hazard from './components/pages/admin/forms/hazard';
@@ -31,6 +33,16 @@ import Hotline from './components/pages/admin/forms/hotline';
 
 import FoodReport from './components/pages/admin/Fetch/report'
 import Track from './components/pages/admin/Fetch/track'
+import Employees from './components/pages/admin/Fetch/employees'
+import EmployeeProfile from './components/pages/admin/Fetch/employeeProfile'
+import DistributionRequests from './components/pages/admin/Fetch/distributionRequests'
+
+const ADMIN_ROLES = ['barangay_official', 'dswd', 'drrmo', 'super_admin']
+const BARANGAY_OFFICIAL_ROLES = ['barangay_official', 'super_admin']
+const DSWD_ROLES = ['dswd', 'super_admin']
+const DRRMO_ROLES = ['drrmo', 'super_admin']
+const TRACK_ROLES = ['barangay_official', 'drrmo', 'super_admin']
+const EVAC_VIEW_ROLES = ['barangay_official', 'dswd', 'drrmo', 'super_admin']
 
 function App() {
 
@@ -45,95 +57,111 @@ function App() {
 
           <Route path='/signUp' element={<SignUp/>}/>
           <Route path='/login' element={<Login/>}/>
+          <Route path='/family-registration' element={<FamilyRegistration/>}/>
           
           <Route element={<AppLayout/>}>
           
 
           <Route path='/evacuation-reg' element={
-            <ProtectedRoute roles={['super_admin','barangay_official']}>
+            <ProtectedRoute roles={DRRMO_ROLES}>
                 <EvacuationCenter/>
             </ProtectedRoute>}/>
 
 
 
             <Route path='/track' element={
-            <ProtectedRoute roles={['super_admin','barangay_official']}>
+            <ProtectedRoute roles={TRACK_ROLES}>
                 <Track/>
+            </ProtectedRoute>}/>
+
+            <Route path='/employees' element={
+            <ProtectedRoute roles={DRRMO_ROLES}>
+                <Employees/>
+            </ProtectedRoute>}/>
+
+            <Route path='/employees/:id' element={
+            <ProtectedRoute roles={DRRMO_ROLES}>
+                <EmployeeProfile/>
+            </ProtectedRoute>}/>
+
+            <Route path='/distribution-requests' element={
+            <ProtectedRoute roles={DSWD_ROLES}>
+                <DistributionRequests/>
             </ProtectedRoute>}/>
             
 
            <Route path='/admin-reg' element={
-            <ProtectedRoute roles={['super_admin']}>
+            <ProtectedRoute roles={DRRMO_ROLES}>
                 <AdminRegister/>
             </ProtectedRoute>}/>  
 
     
           <Route path='/hazard-reg' element={
-            <ProtectedRoute roles={['super_admin','barangay_official']}>
+            <ProtectedRoute roles={DRRMO_ROLES}>
                 <Hazard/>
             </ProtectedRoute>}/>
 
             <Route path='/check-reg' element={
-            <ProtectedRoute roles={['super_admin','barangay_official']}>
+            <ProtectedRoute roles={BARANGAY_OFFICIAL_ROLES}>
                 <Check/>
             </ProtectedRoute>}/>
 
             <Route path='/qr-checkin' element={
-            <ProtectedRoute roles={['super_admin','barangay_official']}>
+            <ProtectedRoute roles={BARANGAY_OFFICIAL_ROLES}>
                 <QrCode/>
             </ProtectedRoute>}/>
 
             <Route path='/evacuation' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={EVAC_VIEW_ROLES}>
                 <Evacuation/>
             </ProtectedRoute>}/>
 
             <Route path='/inventory' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={DSWD_ROLES}>
                 <Inventory/>
             </ProtectedRoute>}/>
 
 
             <Route path='/evacuation/evac-list/:id' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={EVAC_VIEW_ROLES}>
                 <Listing/>
             </ProtectedRoute>}/>
 
 
-            <Route path='/evacuation/evac-list/:id/user/:id' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <Route path='/evacuation/evac-list/:centerId/user/:id' element={
+            <ProtectedRoute roles={EVAC_VIEW_ROLES}>
                 <Profile/>
             </ProtectedRoute>}/>
 
             <Route path='track/user/:id' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={TRACK_ROLES}>
                 <Profile/>
             </ProtectedRoute>}/>
 
 
             <Route path='/dashboard' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={ADMIN_ROLES}>
                 <Dashboard/>
             </ProtectedRoute>}/>
 
              <Route path='/simulate' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={DRRMO_ROLES}>
                 <DisasterSimulation/>
             </ProtectedRoute>}/>
 
             <Route path='/familyCheckin' element={
-            <ProtectedRoute roles={['barangay_official', 'super_admin']}>
+            <ProtectedRoute roles={BARANGAY_OFFICIAL_ROLES}>
                 <FamilyCheckIn/>
             </ProtectedRoute>}/>
 
             <Route path='/hotline-reg' element={
-            <ProtectedRoute roles={['super_admin','barangay_official']}>
+            <ProtectedRoute roles={DRRMO_ROLES}>
                 <Hotline/>
             </ProtectedRoute>}/>
 
 
             <Route path='/report' element={
-            <ProtectedRoute roles={['super_admin']}>
+            <ProtectedRoute roles={ADMIN_ROLES}>
                 <FoodReport/>
             </ProtectedRoute>}/>
 

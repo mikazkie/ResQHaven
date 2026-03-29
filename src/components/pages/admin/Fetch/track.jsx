@@ -19,13 +19,14 @@ export default function Track() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [rowStep, setRowStep] = useState(10)
+  const [visibleRows, setVisibleRows] = useState(10)
+  const [showAll, setShowAll] = useState(false)
 
-  // ✅ Filters
   const [barangay, setBarangay] = useState('')
   const [city, setMunicipality] = useState('')
   const [province, setProvince] = useState('')
 
-  // ✅ Confirmation modal
   const [modal, setModal] = useState({
     show: false,
     userId: null,
@@ -36,15 +37,19 @@ export default function Track() {
 
   const navigate = useNavigate()
 
-  // ✅ Auto fetch with debounce
   useEffect(() => {
     const delay = setTimeout(() => {
       handleSearch()
     }, 400)
+
     return () => clearTimeout(delay)
   }, [search, barangay, city, province])
 
-  // ✅ Fetch users
+  useEffect(() => {
+    setVisibleRows(rowStep)
+    setShowAll(false)
+  }, [rowStep, search, barangay, city, province])
+
   const handleSearch = async () => {
     try {
       setLoading(true)
@@ -55,7 +60,6 @@ export default function Track() {
       )
 
       setUsers(res.users || [])
-
     } catch (err) {
       setError('Failed to fetch data')
     } finally {
@@ -63,7 +67,6 @@ export default function Track() {
     }
   }
 
-  // ✅ Show confirm modal
   const handleStatusClick = (e, user, newStatus) => {
     e.stopPropagation()
     setModal({
@@ -74,7 +77,6 @@ export default function Track() {
     })
   }
 
-  // ✅ Confirm update status
   const confirmUpdateStatus = async () => {
     try {
       setConfirmLoading(true)
@@ -84,7 +86,6 @@ export default function Track() {
         status: modal.newStatus
       })
 
-      // ✅ Update UI instantly
       setUsers(prev =>
         prev.map(u =>
           u.id === modal.userId
@@ -99,7 +100,6 @@ export default function Track() {
         newStatus: '',
         userName: ''
       })
-
     } catch (err) {
       alert('Failed to update status')
     } finally {
@@ -107,53 +107,59 @@ export default function Track() {
     }
   }
 
+  const normalizedRowStep =
+    Number.isFinite(Number(rowStep)) && Number(rowStep) > 0
+      ? Number(rowStep)
+      : 10
+
+  const displayedUsers = showAll
+    ? users
+    : users.slice(0, visibleRows)
+
+  const canShowMore = !showAll && displayedUsers.length < users.length
+  const canShowLess = showAll || visibleRows > normalizedRowStep
+
   return (
-    <div className='container py-4'
+    <div
+      className='container py-4'
       style={{ maxWidth: 950 }}
     >
-
-      {/* ✅ Confirm Modal — OUTSIDE table! */}
       <ConfirmModal
         show={modal.show}
         title='Update Status'
         message={`Mark ${modal.userName} as "${modal.newStatus}"?`}
         confirmText='Yes, Update'
         onConfirm={confirmUpdateStatus}
-        onClose={() => setModal({
-          show: false,
-          userId: null,
-          newStatus: '',
-          userName: ''
-        })}
+        onClose={() =>
+          setModal({
+            show: false,
+            userId: null,
+            newStatus: '',
+            userName: ''
+          })
+        }
         loading={confirmLoading}
       />
 
-      {/* Header */}
       <div className='mb-4'>
-        <h4 className='fw-semibold mb-1'>
-          🔍 Track Person
-        </h4>
+        <h4 className='fw-semibold mb-1'>Track Person</h4>
         <p className='text-muted small mb-3'>
           Search and monitor evacuee status
         </p>
 
-        {/* Search */}
         <input
           type='text'
-          className='form-control rounded-pill
-            shadow-sm px-3 py-2 mb-2'
+          className='form-control rounded-pill shadow-sm px-3 py-2 mb-2'
           placeholder='Search name, email, or phone...'
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
 
-        {/* Filters */}
         <div className='row g-2'>
           <div className='col-md-4'>
             <input
               type='text'
-              className='form-control form-control-sm
-                rounded-pill'
+              className='form-control form-control-sm rounded-pill'
               placeholder='Barangay'
               value={barangay}
               onChange={e => setBarangay(e.target.value)}
@@ -162,20 +168,16 @@ export default function Track() {
           <div className='col-md-4'>
             <input
               type='text'
-              className='form-control form-control-sm
-                rounded-pill'
-              placeholder='Municipality'  // ✅ was City
+              className='form-control form-control-sm rounded-pill'
+              placeholder='Municipality'
               value={city}
-              onChange={e =>
-                setMunicipality(e.target.value)
-              }
+              onChange={e => setMunicipality(e.target.value)}
             />
           </div>
           <div className='col-md-4'>
             <input
               type='text'
-              className='form-control form-control-sm
-                rounded-pill'
+              className='form-control form-control-sm rounded-pill'
               placeholder='Province'
               value={province}
               onChange={e => setProvince(e.target.value)}
@@ -184,37 +186,46 @@ export default function Track() {
         </div>
       </div>
 
-      {/* Error */}
       {error && (
         <div className='alert alert-danger py-2'>
           {error}
         </div>
       )}
 
-      {/* Results */}
-      <div className='bg-white rounded-4
-        shadow-sm p-3'
-      >
-        <div className='d-flex
-          justify-content-between
-          align-items-center mb-3'
-        >
+      <div className='bg-white rounded-4 shadow-sm p-3'>
+        <div className='d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap'>
           <h6 className='mb-0 text-muted'>
             Results
             <span className='badge bg-danger ms-2'>
               {users.length}
             </span>
           </h6>
-          {loading && (
-            <span className='spinner-border
-              spinner-border-sm text-danger'
+
+          <div className='d-flex align-items-center gap-2'>
+            <label
+              className='text-muted mb-0'
+              style={{ fontSize: 12 }}
+            >
+              Rows per load
+            </label>
+            <input
+              type='number'
+              min='1'
+              className='form-control form-control-sm rounded-pill text-center'
+              style={{ width: 90 }}
+              value={rowStep}
+              onChange={e =>
+                setRowStep(Math.max(1, Number(e.target.value) || 1))
+              }
             />
-          )}
+            {loading ? (
+              <span className='spinner-border spinner-border-sm text-danger' />
+            ) : null}
+          </div>
         </div>
 
         <div className='table-responsive'>
           <table className='table align-middle'>
-
             <thead className='text-muted small'>
               <tr>
                 <th>Name</th>
@@ -226,14 +237,11 @@ export default function Track() {
             </thead>
 
             <tbody>
-              {users.length > 0 ? (
-                users.map(user => {
+              {displayedUsers.length > 0 ? (
+                displayedUsers.map(user => {
                   const statusConfig =
-                    PRIMARY_STATUS_CONFIG[
-                      user.primary_status
-                    ] || {
-                      label: user.primary_status
-                        || 'Unknown',
+                    PRIMARY_STATUS_CONFIG[user.primary_status] || {
+                      label: user.primary_status || 'Unknown',
                       color: 'bg-secondary'
                     }
 
@@ -241,111 +249,150 @@ export default function Track() {
                     <tr
                       key={user.id}
                       style={{ cursor: 'pointer' }}
-                      onClick={() =>
-                        navigate(`user/${user.id}`)
-                      }
+                      onClick={() => navigate(`user/${user.id}`)}
                     >
                       <td>
                         <div className='fw-medium'>
                           {user.firstName} {user.lastName}
                         </div>
-                        <div className='text-muted'
+                        <div
+                          className='text-muted'
                           style={{ fontSize: 11 }}
                         >
                           {user.email}
                         </div>
                       </td>
 
-                      <td className='text-muted'
+                      <td
+                        className='text-muted'
                         style={{ fontSize: 13 }}
                       >
                         {user.phone}
                       </td>
 
                       <td className='text-muted small'>
-                        {user.barangay},{' '}
-                        {user.city},{' '}
-                        {user.province}
+                        {user.barangay}, {user.city}, {user.province}
                       </td>
 
-                      {/* ✅ Use primary_status */}
                       <td>
-                        <span className={`badge
-                          rounded-pill px-3 py-2
-                          ${statusConfig.color}`}
-                        >
+                        <span className={`badge rounded-pill px-3 py-2 ${statusConfig.color}`}>
                           {statusConfig.label}
                         </span>
                       </td>
 
-                      {/* ✅ Status buttons */}
                       <td>
-                        <div className='d-flex gap-1
-                          flex-wrap'
-                        >
+                        <div className='d-flex gap-1 flex-wrap'>
                           <button
-                            className='btn btn-sm
-                              btn-outline-warning
-                              rounded-pill'
+                            className='btn btn-sm btn-outline-warning rounded-pill'
                             onClick={e =>
-                              handleStatusClick(
-                                e, user, 'missing'
-                              )
+                              handleStatusClick(e, user, 'missing')
                             }
                           >
                             Missing
                           </button>
 
                           <button
-                            className='btn btn-sm
-                              btn-outline-success
-                              rounded-pill'
+                            className='btn btn-sm btn-outline-success rounded-pill'
                             onClick={e =>
-                              handleStatusClick(
-                                e, user, 'found'
-                              )
+                              handleStatusClick(e, user, 'found')
                             }
                           >
-                           Found
+                            Found
                           </button>
 
                           <button
-                            className='btn btn-sm
-                              btn-outline-danger
-                              rounded-pill'
+                            className='btn btn-sm btn-outline-danger rounded-pill'
                             onClick={e =>
-                              handleStatusClick(
-                                e, user, 'dead'
-                              )
+                              handleStatusClick(e, user, 'dead')
                             }
                           >
                             Dead
                           </button>
                         </div>
                       </td>
-
                     </tr>
                   )
                 })
               ) : (
                 <tr>
-                  <td colSpan='5'
-                    className='text-center
-                      text-muted py-4'
+                  <td
+                    colSpan='5'
+                    className='text-center text-muted py-4'
                   >
-                    {loading
-                      ? 'Loading...'
-                      : '🔍 No users found'
-                    }
+                    {loading ? 'Loading...' : 'No users found'}
                   </td>
                 </tr>
               )}
             </tbody>
-
           </table>
+        </div>
+
+        <div className='d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3'>
+          <div
+            className='text-muted'
+            style={{ fontSize: 12 }}
+          >
+            Showing {displayedUsers.length} of {users.length} rows
+          </div>
+
+          <div className='d-flex flex-wrap gap-2'>
+            <button
+              type='button'
+              className='btn btn-outline-secondary btn-sm rounded-pill px-3'
+              onClick={() => {
+                if (showAll) {
+                  setShowAll(false)
+                  setVisibleRows(Math.max(normalizedRowStep, users.length - normalizedRowStep))
+                  return
+                }
+
+                setVisibleRows(prev => Math.max(normalizedRowStep, prev - normalizedRowStep))
+              }}
+              disabled={!canShowLess || users.length === 0}
+            >
+              Show Less
+            </button>
+
+            <button
+              type='button'
+              className='btn btn-outline-primary btn-sm rounded-pill px-3'
+              onClick={() =>
+                setVisibleRows(prev => prev + normalizedRowStep)
+              }
+              disabled={!canShowMore}
+            >
+              Show More
+            </button>
+
+            <button
+              type='button'
+              className='btn btn-outline-secondary btn-sm rounded-pill px-3'
+              onClick={() => setShowAll(true)}
+              disabled={showAll || users.length === 0}
+            >
+              Show All
+            </button>
+          </div>
         </div>
       </div>
 
+      <button
+        type='button'
+        className='btn btn-dark rounded-pill shadow position-fixed'
+        style={{
+          right: 24,
+          bottom: 24,
+          zIndex: 1030
+        }}
+        onClick={() =>
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          })
+        }
+      >
+        Top
+      </button>
     </div>
   )
 }

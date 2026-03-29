@@ -19,6 +19,7 @@
     "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.2.2",
+    "leaflet.markercluster": "^1.5.3",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-datepicker": "^9.1.0",

@@ -2,21 +2,21 @@ import { useOfflineCheckin } from '../../../../hooks/checkOffline'
 import { useState, useEffect } from 'react'
 
 const SECONDARY_STATUS = [
-  { value: 'injured', label: 'Injured', icon: '🤕' },
-  { value: 'chronic_illness', label: 'With Chronic Illness', icon: '💊' },
-  { value: 'critical_condition', label: 'Critical Condition', icon: '🚨' },
-  { value: 'senior_citizen', label: 'Senior Citizen', icon: '👴' },
-  { value: 'pwd', label: 'Person with Disability', icon: '♿' },
-  { value: 'pregnant', label: 'Pregnant Woman', icon: '🤰' },
-  { value: 'infant_child', label: 'Infant / Child', icon: '👶' },
-  { value: 'lactating', label: 'Lactating Mother', icon: '🍼' },
-  { value: 'others', label: 'Others...', icon: '📝' }
+  { value: 'injured', label: 'Injured' },
+  { value: 'chronic_illness', label: 'With Chronic Illness' },
+  { value: 'critical_condition', label: 'Critical Condition' },
+  { value: 'senior_citizen', label: 'Senior Citizen' },
+  { value: 'pwd', label: 'Person with Disability' },
+  { value: 'pregnant', label: 'Pregnant Woman' },
+  { value: 'infant_child', label: 'Infant / Child' },
+  { value: 'lactating', label: 'Lactating Mother' },
+  { value: 'others', label: 'Others' }
 ]
 
 const TYPE_BADGE = {
-  medicine: { label: '💊 Medicine', bg: 'bg-primary' },
-  special_food: { label: '🍽️ Food', bg: 'bg-success' },
-  allergy: { label: '🤧 Allergy', bg: 'bg-danger' }
+  medicine: { label: 'Medicine', bg: 'bg-primary-subtle text-primary' },
+  special_food: { label: 'Special Food', bg: 'bg-success-subtle text-success' },
+  allergy: { label: 'Allergy', bg: 'bg-danger-subtle text-danger' }
 }
 
 const STATUS_NEEDS_MAP = {
@@ -150,8 +150,8 @@ export default function CheckIn() {
       })
       if (result.success) {
         setSuccess(result.online
-          ? '✅ Saved to database!'
-          : '📵 Saved offline! Will sync when internet returns.'
+          ? 'Saved to database.'
+          : 'Saved offline. It will sync when internet returns.'
         )
         setFormData({
           firstname: '', lastname: '',
@@ -181,20 +181,24 @@ export default function CheckIn() {
   const allergyCount = specialNeeds.filter(n => n.type === 'allergy').length
 
   return (
-    <div>
+    <div className='admin-form-page'>
+      <div className='admin-form-shell'>
       <div className={`alert py-2 ${isOnline ? 'alert-success' : 'alert-warning'}`}>
-        {isOnline ? '🟢 Online — saving to database' : '🔴 Offline — saving locally'}
+        {isOnline ? 'Online: saving to database' : 'Offline: saving locally'}
       </div>
 
-      <div className='container-fluid'>
+      <div className='container-fluid px-0'>
         <div className='card border-0 shadow-sm'>
           <div className='card-body p-4 p-md-5'>
 
-            <div className='mb-4'>
-              <h4 className='fw-semibold mb-1'>Evacuee Check In</h4>
-              <p className='text-muted mb-0' style={{ fontSize: 13 }}>
+            <div className='admin-form-header'>
+              <div>
+                <div className='admin-form-kicker'>Evacuation Intake</div>
+                <h4 className='admin-form-title'>Evacuee Check In</h4>
+                <p className='admin-form-subtitle'>
                 Fill in evacuee details below
-              </p>
+                </p>
+              </div>
             </div>
 
             {error && (
@@ -214,9 +218,7 @@ export default function CheckIn() {
               <div className='d-flex flex-column gap-3'>
 
                 {/* Personal Info */}
-                <div className='fw-semibold text-muted border-bottom pb-2'
-                  style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}
-                >
+                <div className='admin-form-section'>
                   Personal Information
                 </div>
 
@@ -268,12 +270,12 @@ export default function CheckIn() {
                         </span>
                         {age >= 60 && (
                           <span className='badge bg-warning text-dark'>
-                            👴 Senior Citizen
+                            Senior Citizen
                           </span>
                         )}
                         {age < 18 && (
                           <span className='badge bg-info text-dark'>
-                            👶 Minor
+                            Minor
                           </span>
                         )}
                       </div>
@@ -316,7 +318,7 @@ export default function CheckIn() {
                     <button type='button' className='btn btn-outline-secondary'
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? '👁️' : '🙈'}
+                      {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </div>
                 </div>
@@ -362,9 +364,7 @@ export default function CheckIn() {
                 </div>
 
                 {/* Status Section */}
-                <div className='fw-semibold text-muted border-bottom pb-2 mt-2'
-                  style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}
-                >
+                <div className='admin-form-section'>
                   Status
                 </div>
 
@@ -383,20 +383,20 @@ export default function CheckIn() {
                       Automatically set when checking in
                     </div>
                   </div>
-                  <span className='badge bg-primary'>Auto ✓</span>
+                  <span className='badge bg-primary'>Auto</span>
                 </div>
 
                 {/* Secondary Status */}
                 <div>
                   <label className='form-label fw-medium'>
-                    🟡 Special Conditions
+                    Special Conditions
                     <span className='text-muted ms-2' style={{ fontSize: 11 }}>
                       (select all that apply)
                     </span>
                   </label>
 
                   <div
-                    className='d-flex align-items-center gap-2 p-2 rounded border mb-2'
+                    className='d-flex align-items-center gap-2 p-3 rounded-4 border mb-3 admin-form-soft-block'
                     style={{
                       cursor: 'pointer', fontSize: 13,
                       background: selectedStatuses.length === 0 ? '#d1fae5' : '#f8f9fa',
@@ -406,29 +406,20 @@ export default function CheckIn() {
                     }}
                     onClick={() => { setSelectedStatuses([]); setOthersText('') }}
                   >
-                    <span>✅</span>
-                    <span className='fw-medium'>None — No special condition</span>
+                    <span className='fw-medium'>None</span>
                     {selectedStatuses.length === 0 && (
                       <span className='ms-auto fw-bold text-success'>✓</span>
                     )}
                   </div>
 
-                  <div className='d-flex flex-wrap gap-2 mb-2'>
+                  <div className='admin-form-chip-group mb-2'>
                     {SECONDARY_STATUS.map(status => {
                       const isSelected = selectedStatuses.includes(status.value)
                       return (
                         <div key={status.value}
-                          className='px-3 py-2 rounded border d-flex align-items-center gap-1'
-                          style={{
-                            cursor: 'pointer', fontSize: 12,
-                            background: isSelected ? '#fff3cd' : '#f8f9fa',
-                            borderColor: isSelected ? '#ffc107' : '#dee2e6',
-                            color: isSelected ? '#856404' : '#6c757d',
-                            transition: 'all 0.15s', userSelect: 'none'
-                          }}
+                          className={`admin-form-chip ${isSelected ? 'active' : ''}`}
                           onClick={() => handleStatusToggle(status.value)}
                         >
-                          <span>{status.icon}</span>
                           <span>{status.label}</span>
                           {isSelected && <span className='ms-1 fw-bold'>✓</span>}
                         </div>
@@ -446,7 +437,7 @@ export default function CheckIn() {
                   )}
 
                   {selectedStatuses.length > 0 && (
-                    <div className='mt-2 p-2 rounded bg-warning bg-opacity-10 border border-warning-subtle'>
+                    <div className='mt-3 p-3 rounded-4 border' style={{ background: '#fff7ed', borderColor: '#fdba74' }}>
                       <div className='text-muted mb-1' style={{ fontSize: 11 }}>
                         Selected conditions:
                       </div>
@@ -454,8 +445,8 @@ export default function CheckIn() {
                         {selectedStatuses.map(s => {
                           const found = SECONDARY_STATUS.find(x => x.value === s)
                           return (
-                            <span key={s} className='badge bg-warning text-dark'>
-                              {found?.icon} {found?.label}
+                            <span key={s} className='badge text-dark border rounded-pill px-3 py-2' style={{ background: '#fff', borderColor: '#fdba74' }}>
+                              {found?.label}
                               {s === 'others' && othersText ? `: ${othersText}` : ''}
                             </span>
                           )
@@ -466,9 +457,7 @@ export default function CheckIn() {
                 </div>
 
                 {/* ── Special Needs Section ── */}
-                <div className='fw-semibold text-muted border-bottom pb-2 mt-2'
-                  style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}
-                >
+                <div className='admin-form-section'>
                   Special Needs
                 </div>
 
@@ -481,7 +470,7 @@ export default function CheckIn() {
                           {medicineCount}
                         </div>
                         <div className='text-muted' style={{ fontSize: 11 }}>
-                          💊 Medicines
+                          Medicine
                         </div>
                       </div>
                     </div>
@@ -491,7 +480,7 @@ export default function CheckIn() {
                           {foodCount}
                         </div>
                         <div className='text-muted' style={{ fontSize: 11 }}>
-                          🍽️ Foods
+                          Special Food
                         </div>
                       </div>
                     </div>
@@ -501,7 +490,7 @@ export default function CheckIn() {
                           {allergyCount}
                         </div>
                         <div className='text-muted' style={{ fontSize: 11 }}>
-                          🤧 Allergies
+                          Allergy
                         </div>
                       </div>
                     </div>
@@ -511,7 +500,7 @@ export default function CheckIn() {
                 {/* Input row */}
                 <div>
                   <label className='form-label fw-medium'>
-                    🆘 Add Special Need
+                    Add Special Need
                     <span className='text-muted ms-2' style={{ fontSize: 11 }}>
                       (medicines, food, allergies)
                     </span>
@@ -526,9 +515,9 @@ export default function CheckIn() {
                         ...needInput, type: e.target.value
                       })}
                     >
-                      <option value='medicine'>💊 Medicine</option>
-                      <option value='special_food'>🍽️ Special Food</option>
-                      <option value='allergy'>🤧 Allergy</option>
+                      <option value='medicine'>Medicine</option>
+                      <option value='special_food'>Special Food</option>
+                      <option value='allergy'>Allergy</option>
                     </select>
 
                     <input type='text' className='form-control'
@@ -563,7 +552,7 @@ export default function CheckIn() {
                       className='btn btn-danger flex-shrink-0'
                       onClick={handleAddNeed}
                     >
-                      + Add
+                      Add
                     </button>
                   </div>
 
@@ -624,13 +613,13 @@ export default function CheckIn() {
                             <td colSpan='5' style={{ fontSize: 12 }}>
                               <div className='d-flex gap-3 text-muted'>
                                 <span>
-                                  💊 {medicineCount} medicine(s)
+                                  {medicineCount} medicine item(s)
                                 </span>
                                 <span>
-                                  🍽️ {foodCount} food(s)
+                                  {foodCount} food item(s)
                                 </span>
                                 <span>
-                                  🤧 {allergyCount} allergy(ies)
+                                  {allergyCount} allergy note(s)
                                 </span>
                                 <span className='ms-auto fw-medium text-dark'>
                                   Total: {specialNeeds.length} item(s)
@@ -652,7 +641,7 @@ export default function CheckIn() {
 
                 {/* Submit */}
                 <button type='submit'
-                  className='btn btn-danger w-100 py-2 mt-2'
+                  className='btn btn-danger w-100 py-3 mt-2 rounded-4'
                   disabled={loading}
                 >
                   {loading ? (
@@ -660,13 +649,14 @@ export default function CheckIn() {
                       <span className='spinner-border spinner-border-sm me-2' />
                       Processing...
                     </>
-                  ) : 'Check In Evacuee 🛡️'}
+                  ) : 'Check In Evacuee'}
                 </button>
 
               </div>
             </form>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -26,7 +26,7 @@ export default function ProtectedRoute({
 
   // ✅ Check if user role is allowed
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to='/unauthorized' replace />
+    return <Navigate to={user.role === 'user' ? '/' : '/dashboard'} replace />
   }
 
   return children
