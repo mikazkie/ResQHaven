@@ -184,27 +184,26 @@ function Hazard() {
      const response = await postRequest('auth/hazard-reg',formData)
 
      if (response.success) {
-      alert('Evacuation center saved!')
+      alert('Hazard area saved!')
       handleReset()
     }
 
     }catch (error) {
-    alert('Failed to save. Try again.')
+    alert(error?.response?.data?.message || 'Failed to save. Try again.')
   }
     
   }
 
   const handleReset = () => {
     setFormData({
-      name: '',
       address: '',
       barangay: '',
       municipality: '',
       province: '',
       latitude: '',
       longitude: '',
-      capacity: '',
-      disaster_type: ''
+      disaster_type: '',
+      level: ''
     })
     setMarkerPosition(null)
   }
@@ -439,6 +438,9 @@ function Hazard() {
                     onChange={handleChange}
                     required
                   >
+                    <option value=''>
+                      Select level
+                    </option>
                     <option value='low'>
                       Low
                     </option>
@@ -457,15 +459,17 @@ function Hazard() {
                 <div className='col-md-4'>
                   <label className='form-label fw-semibold'>
                     Disaster Type
+                    <span className='text-danger'>*</span>
                   </label>
                   <select
                     name='disaster_type'
                     className='form-select'
                     value={formData.disaster_type}
                     onChange={handleChange}
+                    required
                   >
                     <option value=''>
-                      All Disasters
+                      Select disaster type
                     </option>
                     <option value='typhoon'>
                       Typhoon

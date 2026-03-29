@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useSidebar } from "./SidebarContext";
+import { useAuth } from "../../authentication/AuthContext";
+import { postRequest } from "../../API/API";
 
 export default function AppHeader() {
   const [showAppMenu, setShowAppMenu] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
 
+  const navigate = useNavigate();
+  const { user, setUser } = useAuth();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const searchRef = useRef(null);
+  const displayName = user?.firstName || user?.email || "Admin";
+  const roleLabel = user?.role ? user.role.replace(/_/g, " ").toUpperCase() : "ADMIN";
+  const profileInitial = displayName.charAt(0).toUpperCase() || "A";
 
   const handleToggle = () => {
     if (window.innerWidth >= 992) {
@@ -28,6 +35,20 @@ export default function AppHeader() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await postRequest("auth/logout", {});
+    } catch (error) {
+      console.log(error);
+    } finally {
+      localStorage.removeItem("token");
+      setUser(null);
+      setShowProfile(false);
+      setShowNotifs(false);
+      navigate("/login", { replace: true });
+    }
+  };
 
   const notifications = [
     { id: 1, icon: "🌀", title: "Typhoon Warning", msg: "Signal No. 2 in Cebu", time: "2m ago", color: "danger" },
@@ -178,7 +199,7 @@ export default function AppHeader() {
                 setShowNotifs(false);
               }}
             >
-              J
+              {profileInitial}
             </div>
 
             {showProfile && (
@@ -191,13 +212,13 @@ export default function AppHeader() {
                     className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
                     style={{ width: 38, height: 38 }}
                   >
-                    J
+                    {profileInitial}
                   </div>
 
                   <div>
-                    <div className="fw-semibold small">Juan Dela Cruz</div>
+                    <div className="fw-semibold small">{displayName}</div>
                     <div className="text-muted" style={{ fontSize: 12 }}>
-                      Admin
+                      {roleLabel}
                     </div>
                   </div>
                 </div>
@@ -222,7 +243,7 @@ export default function AppHeader() {
 
                 <button
                   className="dropdown-item text-danger"
-                  onClick={() => setShowProfile(false)}
+                  onClick={handleLogout}
                 >
                   🚪 Sign Out
                 </button>
