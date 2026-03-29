@@ -12,6 +12,30 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 
 import App from './App.jsx'
 
+if (typeof window !== 'undefined') {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(registrations.map((registration) => registration.unregister()))
+      } catch (error) {
+        console.log('Service worker cleanup failed', error)
+      }
+    })
+  }
+
+  if ('caches' in window) {
+    window.addEventListener('load', async () => {
+      try {
+        const cacheKeys = await window.caches.keys()
+        await Promise.all(cacheKeys.map((key) => window.caches.delete(key)))
+      } catch (error) {
+        console.log('Cache cleanup failed', error)
+      }
+    })
+  }
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
